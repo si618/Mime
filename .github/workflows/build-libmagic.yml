@@ -1,0 +1,636 @@
+name: Build libmagic
+
+on:
+  workflow_dispatch:
+    inputs:
+      file_version:
+        description: 'file/file git tag (e.g. FILE5_47)'
+        required: true
+        default: 'FILE5_47'
+      test_ref:
+        description: 'Git ref for test code (branch/tag with updated tests)'
+        required: false
+        default: ''
+
+env:
+  FILE_REPO: https://github.com/file/file.git
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  LLVM_MINGW_TAG: '20260602'
+  LLVM_MINGW_SHA256: '3de3eda9377bbaf35f8c9001f190380f63b8ee981fa55d3ae9d7cce7c6ad7c70'
+
+jobs:
+  validate-inputs:
+    name: Validate inputs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate file_version
+        env:
+          FILE_VERSION: ${{ inputs.file_version }}
+        run: |
+          if ! echo "$FILE_VERSION" | grep -qE '^[a-zA-Z0-9._-]+$'; then
+            echo "::error::Invalid file_version: must be alphanumeric with . _ -"
+            exit 1
+          fi
+      - name: Validate test_ref
+        env:
+          TEST_REF: ${{ inputs.test_ref }}
+        run: |
+          if [ -n "$TEST_REF" ]; then
+            if ! echo "$TEST_REF" | grep -qE '^[a-zA-Z0-9._/-]+$'; then
+              echo "::error::Invalid test_ref: must be alphanumeric with . _ / -"
+              exit 1
+            fi
+          fi
+
+  build-magic-db:
+    name: Compile magic.mgc
+    needs: validate-inputs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone file source
+        env:
+          FILE_VERSION: ${{ inputs.file_version }}
+        run: git clone --depth 1 --branch "$FILE_VERSION" $FILE_REPO /tmp/file-src
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y autoconf automake libtool zlib1g-dev
+
+      - name: Build file command
+        working-directory: /tmp/file-src
+        run: |
+          autoreconf -fiv
+          ./configure
+          make -j$(nproc)
+
+      - name: Compile magic database
+        working-directory: /tmp/file-src
+        run: ./src/file -C -m magic/Magdir
+
+      - name: Upload magic.mgc
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: magic-db
+          path: /tmp/file-src/Magdir.mgc
+
+  build-linux-x64:
+    name: Build linux-x64
+    needs: validate-inputs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone file source
+        env:
+          FILE_VERSION: ${{ inputs.file_version }}
+        run: git clone --depth 1 --branch "$FILE_VERSION" $FILE_REPO /tmp/file-src
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y autoconf automake libtool zlib1g-dev
+
+      - name: Build
+        working-directory: /tmp/file-src
+        run: |
+          autoreconf -fiv
+          ./configure --disable-static --enable-shared
+          make -j$(nproc)
+
+      - name: Prepare artifact
+        run: |
+          mkdir /tmp/output
+          cp /tmp/file-src/src/.libs/libmagic.so.1.0.0 /tmp/output/libmagic-1.so
+          strip /tmp/output/libmagic-1.so
+          file /tmp/output/libmagic-1.so
+
+      - name: Upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: linux-x64
+          path: /tmp/output/libmagic-1.so
+
+  build-linux-arm64:
+    name: Build linux-arm64
+    needs: validate-inputs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone file source
+        env:
+          FILE_VERSION: ${{ inputs.file_version }}
+        run: git clone --depth 1 --branch "$FILE_VERSION" $FILE_REPO /tmp/file-src
+
+      - name: Set up arm64 cross-compilation
+        run: |
+          sudo dpkg --add-architecture arm64
+          CODENAME=$(lsb_release -cs)
+          sudo tee /etc/apt/sources.list.d/amd64.list <<EOF
+          deb [arch=amd64] http://archive.ubuntu.com/ubuntu $CODENAME main universe
+          deb [arch=amd64] http://archive.ubuntu.com/ubuntu $CODENAME-updates main universe
+          deb [arch=amd64] http://security.ubuntu.com/ubuntu $CODENAME-security main universe
+          EOF
+          sudo tee /etc/apt/sources.list.d/arm64.list <<EOF
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $CODENAME main universe
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $CODENAME-updates main universe
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $CODENAME-security main universe
+          EOF
+          sudo rm -f /etc/apt/sources.list
+          sudo find /etc/apt/sources.list.d -name '*.list' ! -name 'amd64.list' ! -name 'arm64.list' -delete
+          sudo find /etc/apt/sources.list.d -name '*.sources' -delete
+          sudo apt-get update
+          sudo apt-get install -y autoconf automake libtool gcc-aarch64-linux-gnu zlib1g-dev:arm64
+
+      - name: Build native file command (for magic compilation)
+        working-directory: /tmp/file-src
+        run: |
+          autoreconf -fiv
+          ./configure
+          make -j$(nproc)
+          cp src/.libs/file src/file-native
+          make distclean
+
+      - name: Cross-compile for aarch64
+        working-directory: /tmp/file-src
+        run: |
+          ./configure --host=aarch64-linux-gnu --disable-static --enable-shared
+          make -j$(nproc) FILE_COMPILE=/tmp/file-src/src/file-native
+
+      - name: Prepare artifact
+        run: |
+          mkdir /tmp/output
+          cp /tmp/file-src/src/.libs/libmagic.so.1.0.0 /tmp/output/libmagic-1.so
+          aarch64-linux-gnu-strip /tmp/output/libmagic-1.so
+          file /tmp/output/libmagic-1.so
+
+      - name: Upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: linux-arm64
+          path: /tmp/output/libmagic-1.so
+
+  build-linux-musl-x64:
+    name: Build linux-musl-x64
+    needs: validate-inputs
+    runs-on: ubuntu-latest
+    container: alpine@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11 # alpine:3.21
+    steps:
+      - name: Install dependencies
+        run: apk add --no-cache git build-base autoconf automake libtool zlib-dev
+
+      - name: Clone file source
+        env:
+          FILE_VERSION: ${{ inputs.file_version }}
+        run: git clone --depth 1 --branch "$FILE_VERSION" $FILE_REPO /tmp/file-src
+
+      - name: Build
+        working-directory: /tmp/file-src
+        run: |
+          autoreconf -fiv
+          ./configure --disable-static --enable-shared
+          make -j$(nproc)
+
+      - name: Prepare artifact
+        run: |
+          mkdir /tmp/output
+          cp /tmp/file-src/src/.libs/libmagic.so.1.0.0 /tmp/output/libmagic-1.so
+          strip /tmp/output/libmagic-1.so
+          file /tmp/output/libmagic-1.so
+
+      - name: Upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: linux-musl-x64
+          path: /tmp/output/libmagic-1.so
+
+  build-osx-x64:
+    name: Build osx-x64
+    needs: validate-inputs
+    runs-on: macos-latest
+    steps:
+      - name: Clone file source
+        env:
+          FILE_VERSION: ${{ inputs.file_version }}
+        run: git clone --depth 1 --branch "$FILE_VERSION" $FILE_REPO /tmp/file-src
+
+      - name: Install dependencies
+        run: brew install autoconf automake libtool
+
+      - name: Build (cross-compile x86_64 on ARM)
+        working-directory: /tmp/file-src
+        run: |
+          autoreconf -fiv
+          ./configure --host=x86_64-apple-darwin --disable-static --enable-shared \
+            CC="clang -arch x86_64" CXX="clang++ -arch x86_64"
+          make -j$(sysctl -n hw.ncpu)
+
+      - name: Prepare artifact
+        run: |
+          mkdir /tmp/output
+          cp /tmp/file-src/src/.libs/libmagic.1.dylib /tmp/output/libmagic-1.dylib
+          strip -x /tmp/output/libmagic-1.dylib
+          file /tmp/output/libmagic-1.dylib
+
+      - name: Upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: osx-x64
+          path: /tmp/output/libmagic-1.dylib
+
+  build-osx-arm64:
+    name: Build osx-arm64
+    needs: validate-inputs
+    runs-on: macos-latest
+    steps:
+      - name: Clone file source
+        env:
+          FILE_VERSION: ${{ inputs.file_version }}
+        run: git clone --depth 1 --branch "$FILE_VERSION" $FILE_REPO /tmp/file-src
+
+      - name: Install dependencies
+        run: brew install autoconf automake libtool
+
+      - name: Build
+        working-directory: /tmp/file-src
+        run: |
+          autoreconf -fiv
+          ./configure --disable-static --enable-shared
+          make -j$(sysctl -n hw.ncpu)
+
+      - name: Prepare artifact
+        run: |
+          mkdir /tmp/output
+          cp /tmp/file-src/src/.libs/libmagic.1.dylib /tmp/output/libmagic-1.dylib
+          strip -x /tmp/output/libmagic-1.dylib
+          file /tmp/output/libmagic-1.dylib
+
+      - name: Upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: osx-arm64
+          path: /tmp/output/libmagic-1.dylib
+
+  build-win-x64:
+    name: Build win-x64
+    needs: validate-inputs
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: msys2/setup-msys2@e9898307ac31d1a803454791be09ab9973336e1c # v2
+        with:
+          msystem: MINGW64
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-zlib
+            mingw-w64-x86_64-libgnurx
+            autoconf automake libtool make git
+
+      - name: Clone file source
+        env:
+          FILE_VERSION: ${{ inputs.file_version }}
+        run: git clone --depth 1 --branch "$FILE_VERSION" $FILE_REPO ~/file-src
+
+      - name: Build
+        run: |
+          cd ~/file-src
+          autoreconf -fiv
+          CFLAGS="-O2 -Wno-incompatible-pointer-types" ./configure --disable-static --enable-shared
+          make -j$(nproc)
+
+      - name: Prepare artifact
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/output
+          cp ~/file-src/src/.libs/libmagic-1.dll $GITHUB_WORKSPACE/output/
+          strip $GITHUB_WORKSPACE/output/libmagic-1.dll
+          cp /mingw64/bin/libgnurx-0.dll $GITHUB_WORKSPACE/output/
+
+      - name: Upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: win-x64
+          path: output/*
+
+  build-win-x86:
+    name: Build win-x86
+    needs: validate-inputs
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: msys2/setup-msys2@e9898307ac31d1a803454791be09ab9973336e1c # v2
+        with:
+          msystem: MINGW32
+          install: >-
+            mingw-w64-i686-gcc
+            mingw-w64-i686-zlib
+            mingw-w64-i686-libgnurx
+            autoconf automake libtool make git
+
+      - name: Clone file source
+        env:
+          FILE_VERSION: ${{ inputs.file_version }}
+        run: git clone --depth 1 --branch "$FILE_VERSION" $FILE_REPO ~/file-src
+
+      - name: Build
+        run: |
+          cd ~/file-src
+          autoreconf -fiv
+          CFLAGS="-O2 -Wno-incompatible-pointer-types" ./configure --disable-static --enable-shared
+          make -j$(nproc)
+
+      - name: Prepare artifact
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/output
+          cp ~/file-src/src/.libs/libmagic-1.dll $GITHUB_WORKSPACE/output/
+          strip $GITHUB_WORKSPACE/output/libmagic-1.dll
+          cp /mingw32/bin/libgnurx-0.dll $GITHUB_WORKSPACE/output/
+
+      - name: Upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: win-x86
+          path: output/*
+
+  build-win-arm64:
+    name: Build win-arm64
+    needs: validate-inputs
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: msys2/setup-msys2@e9898307ac31d1a803454791be09ab9973336e1c # v2
+        with:
+          msystem: MINGW64
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-zlib
+            mingw-w64-x86_64-libgnurx
+            autoconf automake libtool make git
+
+      - name: Download and verify llvm-mingw toolchain
+        shell: pwsh
+        env:
+          LLVM_MINGW_TAG: ${{ env.LLVM_MINGW_TAG }}
+          LLVM_MINGW_SHA256: ${{ env.LLVM_MINGW_SHA256 }}
+        run: |
+          $url = "https://github.com/mstorsjo/llvm-mingw/releases/download/$env:LLVM_MINGW_TAG/llvm-mingw-$env:LLVM_MINGW_TAG-ucrt-x86_64.zip"
+          Write-Host "Downloading $url"
+          Invoke-WebRequest -Uri $url -OutFile llvm-mingw.zip
+          $actual = (Get-FileHash -Algorithm SHA256 llvm-mingw.zip).Hash.ToLower()
+          if ($actual -ne $env:LLVM_MINGW_SHA256) {
+            throw "SHA256 mismatch! Expected: $env:LLVM_MINGW_SHA256 Actual: $actual"
+          }
+          Write-Host "SHA256 verified: $actual"
+          Expand-Archive -Path llvm-mingw.zip -DestinationPath D:\llvm-mingw
+
+      - name: Clone file source
+        env:
+          FILE_VERSION: ${{ inputs.file_version }}
+        run: git clone --depth 1 --branch "$FILE_VERSION" $FILE_REPO ~/file-src
+
+      - name: Build native file command first
+        run: |
+          cd ~/file-src
+          autoreconf -fiv
+          CFLAGS="-O2 -Wno-incompatible-pointer-types" ./configure
+          make -j$(nproc)
+          # Copy the binary and its DLL dependencies so it works after distclean
+          mkdir -p ~/file-native
+          cp src/.libs/file.exe ~/file-native/
+          ldd src/.libs/file.exe | grep -i mingw | awk '{print $3}' | xargs -I{} cp {} ~/file-native/ 2>/dev/null || true
+          cp src/.libs/*.dll ~/file-native/ 2>/dev/null || true
+          make distclean
+
+      - name: Get arm64 gnurx library
+        run: |
+          # Download the MSYS2 arm64 gnurx package and extract lib/dll
+          pacman -Sw --noconfirm --cachedir /tmp/pkg mingw-w64-clang-aarch64-libgnurx
+          mkdir -p ~/arm64-gnurx
+          for pkg in /tmp/pkg/mingw-w64-clang-aarch64-libgnurx-*.zst; do
+            tar -xf "$pkg" -C ~/arm64-gnurx 2>/dev/null || true
+          done
+          ls -la ~/arm64-gnurx/clangarm64/lib/libgnurx* ~/arm64-gnurx/clangarm64/bin/libgnurx* 2>/dev/null || true
+
+      - name: Cross-compile for aarch64
+        run: |
+          cd ~/file-src
+          LLVM_MINGW=$(cygpath -u "$(ls -d /d/llvm-mingw/llvm-mingw-*)")
+          GNURX_DIR="$HOME/arm64-gnurx/clangarm64"
+          export PATH="$LLVM_MINGW/bin:$PATH"
+          CONFIG_SITE=/dev/null \
+          CFLAGS="-O2 -Wno-incompatible-pointer-types -I$GNURX_DIR/include" \
+          LDFLAGS="-L$GNURX_DIR/lib" \
+          CC=aarch64-w64-mingw32-gcc \
+          ./configure --host=aarch64-w64-mingw32 --disable-static --enable-shared \
+            --disable-zlib \
+            ac_cv_func_fork=no ac_cv_func_fork_works=no
+          make -j$(nproc) FILE_COMPILE="$HOME/file-native/file.exe"
+
+      - name: Prepare artifact
+        run: |
+          LLVM_MINGW=$(cygpath -u "$(ls -d /d/llvm-mingw/llvm-mingw-*)")
+          GNURX_DIR="$HOME/arm64-gnurx/clangarm64"
+          mkdir -p $GITHUB_WORKSPACE/output
+          cp ~/file-src/src/.libs/libmagic-1.dll $GITHUB_WORKSPACE/output/
+          "$LLVM_MINGW/bin/aarch64-w64-mingw32-strip" $GITHUB_WORKSPACE/output/libmagic-1.dll
+          cp "$GNURX_DIR/bin/libgnurx-0.dll" $GITHUB_WORKSPACE/output/ 2>/dev/null || true
+          file $GITHUB_WORKSPACE/output/libmagic-1.dll
+
+      - name: Upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: win-arm64
+          path: output/*
+
+  test-linux-x64:
+    name: Test linux-x64
+    needs:
+      - build-magic-db
+      - build-linux-x64
+      - build-linux-arm64
+      - build-linux-musl-x64
+      - build-osx-x64
+      - build-osx-arm64
+      - build-win-x64
+      - build-win-x86
+      - build-win-arm64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          ref: ${{ inputs.test_ref || github.ref }}
+      - uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2 # v5
+        with:
+          dotnet-version: '8.0.x'
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: magic-db
+          path: artifacts/magic-db
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: linux-x64
+          path: artifacts/linux-x64
+      - name: Install built binaries
+        run: |
+          cp artifacts/magic-db/Magdir.mgc src/Mime/content/magic.mgc
+          cp artifacts/linux-x64/libmagic-1.so src/Mime/runtimes/linux-x64/native/libmagic-1.so
+      - name: Run tests
+        run: dotnet test --logger "console;verbosity=normal"
+
+  test-osx-arm64:
+    name: Test osx-arm64
+    needs:
+      - build-magic-db
+      - build-linux-x64
+      - build-linux-arm64
+      - build-linux-musl-x64
+      - build-osx-x64
+      - build-osx-arm64
+      - build-win-x64
+      - build-win-x86
+      - build-win-arm64
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          ref: ${{ inputs.test_ref || github.ref }}
+      - uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2 # v5
+        with:
+          dotnet-version: '8.0.x'
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: magic-db
+          path: artifacts/magic-db
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: osx-arm64
+          path: artifacts/osx-arm64
+      - name: Install built binaries
+        run: |
+          cp artifacts/magic-db/Magdir.mgc src/Mime/content/magic.mgc
+          cp artifacts/osx-arm64/libmagic-1.dylib src/Mime/runtimes/osx-arm64/native/libmagic-1.dylib
+      - name: Build and verify native lib
+        run: |
+          dotnet build -p:Platform=ARM64
+          file test/MimeTests/bin/Debug/net8.0/libmagic-1.dylib
+      - name: Run tests
+        run: dotnet test --no-build -p:Platform=ARM64 --logger "console;verbosity=normal"
+
+  test-win-x64:
+    name: Test win-x64
+    needs:
+      - build-magic-db
+      - build-linux-x64
+      - build-linux-arm64
+      - build-linux-musl-x64
+      - build-osx-x64
+      - build-osx-arm64
+      - build-win-x64
+      - build-win-x86
+      - build-win-arm64
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          ref: ${{ inputs.test_ref || github.ref }}
+      - uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2 # v5
+        with:
+          dotnet-version: '8.0.x'
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: magic-db
+          path: artifacts/magic-db
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: win-x64
+          path: artifacts/win-x64
+      - name: Install built binaries
+        run: |
+          Copy-Item artifacts/magic-db/Magdir.mgc src/Mime/content/magic.mgc
+          Copy-Item artifacts/win-x64/* src/Mime/runtimes/win-x64/native/ -Force
+      - name: Run tests
+        run: dotnet test --logger "console;verbosity=normal"
+
+  update-repo:
+    name: Update runtimes and create PR
+    needs:
+      - test-linux-x64
+      - test-osx-arm64
+      - test-win-x64
+      - build-linux-arm64
+      - build-linux-musl-x64
+      - build-osx-x64
+      - build-win-x86
+      - build-win-arm64
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          path: artifacts
+
+      - name: List artifacts
+        run: find artifacts -type f | sort
+
+      - name: Copy binaries to runtime directories
+        run: |
+          cp artifacts/magic-db/Magdir.mgc src/Mime/content/magic.mgc
+          cp artifacts/linux-x64/libmagic-1.so src/Mime/runtimes/linux-x64/native/libmagic-1.so
+          cp artifacts/linux-arm64/libmagic-1.so src/Mime/runtimes/linux-arm64/native/libmagic-1.so
+          cp artifacts/linux-musl-x64/libmagic-1.so src/Mime/runtimes/linux-musl-x64/native/libmagic-1.so
+          cp artifacts/osx-x64/libmagic-1.dylib src/Mime/runtimes/osx-x64/native/libmagic-1.dylib
+          cp artifacts/osx-arm64/libmagic-1.dylib src/Mime/runtimes/osx-arm64/native/libmagic-1.dylib
+          cp artifacts/win-x64/* src/Mime/runtimes/win-x64/native/
+          cp artifacts/win-x86/* src/Mime/runtimes/win-x86/native/
+          cp artifacts/win-arm64/* src/Mime/runtimes/win-arm64/native/
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No changes detected"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Changes detected:"
+            git diff --stat
+          fi
+
+      - name: Create PR
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FILE_VERSION: ${{ inputs.file_version }}
+        run: |
+          BRANCH="update-libmagic-${FILE_VERSION}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Delete existing branch/PR if re-running for the same version
+          git push origin --delete "$BRANCH" 2>/dev/null || true
+          gh pr list --head "$BRANCH" --json number --jq '.[].number' | xargs -I{} gh pr close {} 2>/dev/null || true
+          git checkout -b "$BRANCH"
+          git add src/Mime/content/magic.mgc src/Mime/runtimes/
+          git commit -m "Update libmagic to ${FILE_VERSION}
+
+          Built from https://github.com/file/file/tree/${FILE_VERSION}"
+          git push -u origin "$BRANCH"
+          gh pr create \
+            --title "Update libmagic to ${FILE_VERSION}" \
+            --body "## Summary
+          - Rebuilt all platform native binaries from file/file@${FILE_VERSION}
+          - Recompiled magic.mgc database
+          - Tests passed on linux-x64, osx-arm64, and win-x64
+
+          ## Platforms
+          | Platform       | Binary                  | Tested |
+          | -------------- | ----------------------- | ------ |
+          | linux-x64      | libmagic-1.so           | Yes    |
+          | linux-arm64    | libmagic-1.so           | No     |
+          | linux-musl-x64 | libmagic-1.so           | No     |
+          | osx-x64        | libmagic-1.dylib        | No     |
+          | osx-arm64      | libmagic-1.dylib        | Yes    |
+          | win-x64        | libmagic-1.dll + gnurx  | Yes    |
+          | win-x86        | libmagic-1.dll + gnurx  | No     |
+          | win-arm64      | libmagic-1.dll          | No     |"

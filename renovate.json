@@ -1,0 +1,25 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests",
+    "docker:pinDigests"
+  ],
+  "packageRules": [
+    {
+      "matchManagers": ["github-actions"],
+      "automerge": false,
+      "groupName": "GitHub Actions"
+    },
+    {
+      "matchManagers": ["nuget"],
+      "automerge": false,
+      "groupName": "NuGet packages"
+    },
+    {
+      "matchManagers": ["docker-compose", "dockerfile"],
+      "automerge": false,
+      "groupName": "Docker images"
+    }
+  ]
+}
