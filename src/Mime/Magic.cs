@@ -82,7 +82,7 @@ public sealed class Magic : IDisposable
     {
         ThrowIfDisposed();
 
-        var length = buffer.Length < bufferSize ? buffer.Length : bufferSize;
+        nint length = buffer.Length < bufferSize ? buffer.Length : bufferSize;
 
         var str = Marshal.PtrToStringAnsi(MagicNative.magic_buffer(_magic, buffer, length));
         if (str == null)
@@ -157,11 +157,11 @@ public sealed class Magic : IDisposable
     /// </summary>
     /// <param name="param"></param>
     /// <returns></returns>
-    public int GetParam(MagicParams param)
+    public nint GetParam(MagicParams param)
     {
         ThrowIfDisposed();
 
-        if (MagicNative.magic_getparam(_magic, param, out int value) < 0)
+        if (MagicNative.magic_getparam(_magic, param, out nint value) < 0)
         {
             throw new MagicException($"Invalid param \"{param}\".");
         }
@@ -175,7 +175,7 @@ public sealed class Magic : IDisposable
     /// </summary>
     /// <param name="param"></param>
     /// <param name="value"></param>
-    public void SetParam(MagicParams param, int value)
+    public void SetParam(MagicParams param, nint value)
     {
         ThrowIfDisposed();
 

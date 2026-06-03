@@ -20,7 +20,7 @@ internal static class MagicNative
     public static extern IntPtr magic_file(IntPtr magic_cookie, string? dbPath);
 
     [DllImport(MAGIC_LIB_PATH, CallingConvention = CallingConvention.Cdecl)]
-    public static extern IntPtr magic_buffer(IntPtr magic_cookie, byte[] buffer, int length);
+    public static extern IntPtr magic_buffer(IntPtr magic_cookie, byte[] buffer, nint length);
 
     [DllImport(MAGIC_LIB_PATH, CallingConvention = CallingConvention.Cdecl)]
     public static extern IntPtr magic_error(IntPtr magic_cookie);
@@ -38,10 +38,10 @@ internal static class MagicNative
     public static extern int magic_compile(IntPtr magic_cookie, string? dbPath);
 
     [DllImport(MAGIC_LIB_PATH, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int magic_getparam(IntPtr magic_cookie, MagicParams param, out int value);
+    public static extern int magic_getparam(IntPtr magic_cookie, MagicParams param, out nint value);
 
     [DllImport(MAGIC_LIB_PATH, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int magic_setparam(IntPtr magic_cookie, MagicParams param, ref int value);
+    public static extern int magic_setparam(IntPtr magic_cookie, MagicParams param, ref nint value);
 
     [DllImport(MAGIC_LIB_PATH, CallingConvention = CallingConvention.Cdecl)]
     public static extern int magic_version();

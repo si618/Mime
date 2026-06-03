@@ -155,6 +155,11 @@ public enum MagicOpenFlags
     MAGIC_NO_CHECK_JSON = 0x400000,
 
     /// <summary>
+    /// Don't check for SIMH tape files.
+    /// </summary>
+    MAGIC_NO_CHECK_SIMH = 0x800000,
+
+    /// <summary>
     /// No built-in tests; only consult the magic file.
     /// </summary>
     MAGIC_NO_CHECK_BUILTIN =
@@ -168,5 +173,6 @@ public enum MagicOpenFlags
         MAGIC_NO_CHECK_CDF |
         MAGIC_NO_CHECK_TOKENS |
         MAGIC_NO_CHECK_ENCODING |
-        MAGIC_NO_CHECK_JSON,
+        MAGIC_NO_CHECK_JSON |
+        MAGIC_NO_CHECK_SIMH,
 }

@@ -7,7 +7,7 @@ namespace MimeTests;
 public class MagicMeta
 {
     [Fact]
-    public void CheckVersion() => Assert.Equal(546, Magic.Version);
+    public void CheckVersion() => Assert.Equal(547, Magic.Version);
 
     [Fact]
     public void GetFlags()
@@ -40,20 +40,20 @@ public class MagicMeta
     public void GetParams()
     {
         using var magic = new Magic(MagicOpenFlags.MAGIC_NONE);
-        int value = magic.GetParam(MagicParams.MAGIC_PARAM_NAME_MAX);
+        nint value = magic.GetParam(MagicParams.MAGIC_PARAM_NAME_MAX);
 
-        Assert.Equal(100, value);
+        Assert.Equal(150, value);
     }
 
     [Fact]
     public void SetParams()
     {
-        int expected = 20;
+        nint expected = 20;
 
         using var magic = new Magic(MagicOpenFlags.MAGIC_NONE);
 
         magic.SetParam(MagicParams.MAGIC_PARAM_NAME_MAX, expected);
-        int value = magic.GetParam(MagicParams.MAGIC_PARAM_NAME_MAX);
+        nint value = magic.GetParam(MagicParams.MAGIC_PARAM_NAME_MAX);
 
         Assert.Equal(expected, value);
     }
