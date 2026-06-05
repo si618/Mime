@@ -1,0 +1,36 @@
+# This workflow produces a NuGet package (.nupkg) as a build artifact on every
+# push to master. It does NOT publish to nuget.org.
+#
+# Why: This is a fork of hey-red/Mime. The upstream project already publishes
+# the official package to nuget.org. We maintain this fork to carry custom
+# native binary updates (libmagic rebuilds via build-libmagic.yml) ahead of
+# upstream releases. Publishing a competing package to nuget.org from a fork
+# would conflict with the upstream package, so we distribute via GitHub
+# Actions artifacts instead — downloadable directly from the workflow run.
+name: Pack
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  pack:
+    name: Pack NuGet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2 # v5
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Pack
+        run: dotnet pack src/Mime/Mime.csproj -c Release -o nupkg
+
+      - name: Upload NuGet package
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: nupkg
+          path: nupkg/*.nupkg
+          retention-days: 90
