@@ -377,8 +377,9 @@ jobs:
           cp ~/file-src/src/.libs/libmagic-1.dll $GITHUB_WORKSPACE/output/
           strip $GITHUB_WORKSPACE/output/libmagic-1.dll
           cp /mingw32/bin/libgnurx-0.dll $GITHUB_WORKSPACE/output/
+          ldd ~/file-src/src/.libs/libmagic-1.dll
           ldd ~/file-src/src/.libs/libmagic-1.dll \
-            | grep -i '/mingw32/' \
+            | grep -iv 'system32\|not found\|WINDOWS' \
             | awk '{print $3}' \
             | xargs -I{} cp {} $GITHUB_WORKSPACE/output/ 2>/dev/null || true
           ls -la $GITHUB_WORKSPACE/output/
