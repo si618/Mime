@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ImportGroup>
-    <Import Project="..\..\src\Mime\Platform.props" />
+    <Import Project="..\..\src\Mime\Mime.props" />
   </ImportGroup>
   
   <!-- Windows -->
