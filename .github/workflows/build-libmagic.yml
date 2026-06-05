@@ -722,8 +722,13 @@ jobs:
         run: |
           Copy-Item artifacts/magic-db/Magdir.mgc src/Mime/content/magic.mgc
           Copy-Item artifacts/win-x86/* src/Mime/runtimes/win-x86/native/ -Force
+          Get-ChildItem src/Mime/runtimes/win-x86/native/
+      - name: Build and verify native lib
+        run: |
+          dotnet build -p:Platform=x86 -v:normal
+          Get-ChildItem test/MimeTests/bin/x86/Debug/net10.0/libmagic*,test/MimeTests/bin/x86/Debug/net10.0/magic* -ErrorAction SilentlyContinue
       - name: Run tests
-        run: dotnet test -p:Platform=x86 --logger "console;verbosity=normal"
+        run: dotnet test --no-build -p:Platform=x86 --logger "console;verbosity=normal"
 
   update-repo:
     name: Update runtimes and create PR
