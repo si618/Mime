@@ -197,6 +197,42 @@ jobs:
           name: linux-musl-x64
           path: /tmp/output/libmagic-1.so
 
+  build-linux-musl-arm64:
+    name: Build linux-musl-arm64
+    needs: validate-inputs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3 # v4
+        with:
+          platforms: arm64
+
+      - name: Build in arm64 Alpine container
+        env:
+          FILE_VERSION: ${{ inputs.file_version }}
+        run: |
+          docker run --rm --platform linux/arm64 \
+            -e FILE_VERSION="$FILE_VERSION" \
+            -e FILE_REPO="$FILE_REPO" \
+            -v /tmp/output:/output \
+            alpine:3.21 sh -c '
+              apk add --no-cache git build-base autoconf automake libtool zlib-dev
+              git clone --depth 1 --branch "$FILE_VERSION" "$FILE_REPO" /tmp/file-src
+              cd /tmp/file-src
+              autoreconf -fiv
+              ./configure --disable-static --enable-shared
+              make -j$(nproc)
+              cp src/.libs/libmagic.so.1.0.0 /output/libmagic-1.so
+              strip /output/libmagic-1.so
+              file /output/libmagic-1.so
+            '
+
+      - name: Upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: linux-musl-arm64
+          path: /tmp/output/libmagic-1.so
+
   build-osx-x64:
     name: Build osx-x64
     needs: validate-inputs
@@ -447,6 +483,7 @@ jobs:
       - build-linux-x64
       - build-linux-arm64
       - build-linux-musl-x64
+      - build-linux-musl-arm64
       - build-osx-x64
       - build-osx-arm64
       - build-win-x64
@@ -482,6 +519,7 @@ jobs:
       - build-linux-x64
       - build-linux-arm64
       - build-linux-musl-x64
+      - build-linux-musl-arm64
       - build-osx-x64
       - build-osx-arm64
       - build-win-x64
@@ -521,6 +559,7 @@ jobs:
       - build-linux-x64
       - build-linux-arm64
       - build-linux-musl-x64
+      - build-linux-musl-arm64
       - build-osx-x64
       - build-osx-arm64
       - build-win-x64
@@ -557,6 +596,7 @@ jobs:
       - test-win-x64
       - build-linux-arm64
       - build-linux-musl-x64
+      - build-linux-musl-arm64
       - build-osx-x64
       - build-win-x86
       - build-win-arm64
@@ -580,6 +620,7 @@ jobs:
           cp artifacts/linux-x64/libmagic-1.so src/Mime/runtimes/linux-x64/native/libmagic-1.so
           cp artifacts/linux-arm64/libmagic-1.so src/Mime/runtimes/linux-arm64/native/libmagic-1.so
           cp artifacts/linux-musl-x64/libmagic-1.so src/Mime/runtimes/linux-musl-x64/native/libmagic-1.so
+          cp artifacts/linux-musl-arm64/libmagic-1.so src/Mime/runtimes/linux-musl-arm64/native/libmagic-1.so
           cp artifacts/osx-x64/libmagic-1.dylib src/Mime/runtimes/osx-x64/native/libmagic-1.dylib
           cp artifacts/osx-arm64/libmagic-1.dylib src/Mime/runtimes/osx-arm64/native/libmagic-1.dylib
           cp artifacts/win-x64/* src/Mime/runtimes/win-x64/native/
@@ -624,13 +665,14 @@ jobs:
           - Tests passed on linux-x64, osx-arm64, and win-x64
 
           ## Platforms
-          | Platform       | Binary                  | Tested |
-          | -------------- | ----------------------- | ------ |
-          | linux-x64      | libmagic-1.so           | Yes    |
-          | linux-arm64    | libmagic-1.so           | No     |
-          | linux-musl-x64 | libmagic-1.so           | No     |
-          | osx-x64        | libmagic-1.dylib        | No     |
-          | osx-arm64      | libmagic-1.dylib        | Yes    |
-          | win-x64        | libmagic-1.dll + gnurx  | Yes    |
-          | win-x86        | libmagic-1.dll + gnurx  | No     |
-          | win-arm64      | libmagic-1.dll          | No     |"
+          | Platform         | Binary                 | Tested |
+          | ---------------- | ---------------------- | ------ |
+          | linux-x64        | libmagic-1.so          | Yes    |
+          | linux-arm64      | libmagic-1.so          | No     |
+          | linux-musl-x64   | libmagic-1.so          | No     |
+          | linux-musl-arm64 | libmagic-1.so          | No     |
+          | osx-x64          | libmagic-1.dylib       | No     |
+          | osx-arm64        | libmagic-1.dylib       | Yes    |
+          | win-x64          | libmagic-1.dll + gnurx | Yes    |
+          | win-x86          | libmagic-1.dll + gnurx | No     |
+          | win-arm64        | libmagic-1.dll         | No     |"

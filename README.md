@@ -14,8 +14,9 @@ PM> Install-Package Mime
 Supported runtimes:
 * linux-arm64
 * linux-musl-x64
+* linux-musl-arm64
 * linux-x64
-* osx-arm64(tested on macOS 13 Ventura)
+* osx-arm64 (tested on macOS 13 Ventura)
 * osx-x64
 * win-arm64
 * win-x64
