@@ -730,7 +730,9 @@ jobs:
       - name: Run tests
         run: |
           Get-ChildItem src/Mime/runtimes/win-x86/native/
-          dotnet test -p:Platform=x86 --logger "console;verbosity=normal"
+          dotnet build test/MimeTests -p:Platform=x86
+          Get-ChildItem test/MimeTests/bin/x86/Debug/net10.0/ -Filter "lib*"
+          dotnet test test/MimeTests --no-build -p:Platform=x86 --logger "console;verbosity=normal"
         env:
           DOTNET_ROOT_X86: C:\Program Files\dotnet\x86
 
