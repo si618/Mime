@@ -481,14 +481,6 @@ jobs:
     needs:
       - build-magic-db
       - build-linux-x64
-      - build-linux-arm64
-      - build-linux-musl-x64
-      - build-linux-musl-arm64
-      - build-osx-x64
-      - build-osx-arm64
-      - build-win-x64
-      - build-win-x86
-      - build-win-arm64
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -512,19 +504,139 @@ jobs:
       - name: Run tests
         run: dotnet test --logger "console;verbosity=normal"
 
+  test-linux-arm64:
+    name: Test linux-arm64
+    needs:
+      - build-magic-db
+      - build-linux-arm64
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: ${{ inputs.test_ref || github.ref }}
+      - uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2 # v5
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: magic-db
+          path: artifacts/magic-db
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: linux-arm64
+          path: artifacts/linux-arm64
+      - name: Install built binaries
+        run: |
+          cp artifacts/magic-db/Magdir.mgc src/Mime/content/magic.mgc
+          cp artifacts/linux-arm64/libmagic-1.so src/Mime/runtimes/linux-arm64/native/libmagic-1.so
+      - name: Build and verify native lib
+        run: |
+          dotnet build -p:Platform=ARM64
+          file test/MimeTests/bin/Debug/net10.0/libmagic-1.so
+      - name: Run tests
+        run: dotnet test --no-build -p:Platform=ARM64 --logger "console;verbosity=normal"
+
+  test-linux-musl-x64:
+    name: Test linux-musl-x64
+    needs:
+      - build-magic-db
+      - build-linux-musl-x64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: ${{ inputs.test_ref || github.ref }}
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: magic-db
+          path: artifacts/magic-db
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: linux-musl-x64
+          path: artifacts/linux-musl-x64
+      - name: Install built binaries
+        run: |
+          cp artifacts/magic-db/Magdir.mgc src/Mime/content/magic.mgc
+          cp artifacts/linux-musl-x64/libmagic-1.so src/Mime/runtimes/linux-x64/native/libmagic-1.so
+      - name: Run tests in Alpine container
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace \
+            mcr.microsoft.com/dotnet/sdk:10.0-alpine \
+            dotnet test --logger "console;verbosity=normal"
+
+  test-linux-musl-arm64:
+    name: Test linux-musl-arm64
+    needs:
+      - build-magic-db
+      - build-linux-musl-arm64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3 # v4
+        with:
+          platforms: arm64
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: ${{ inputs.test_ref || github.ref }}
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: magic-db
+          path: artifacts/magic-db
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: linux-musl-arm64
+          path: artifacts/linux-musl-arm64
+      - name: Install built binaries
+        run: |
+          cp artifacts/magic-db/Magdir.mgc src/Mime/content/magic.mgc
+          cp artifacts/linux-musl-arm64/libmagic-1.so src/Mime/runtimes/linux-arm64/native/libmagic-1.so
+      - name: Run tests in arm64 Alpine container
+        run: |
+          docker run --rm --platform linux/arm64 \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace \
+            mcr.microsoft.com/dotnet/sdk:10.0-alpine \
+            dotnet test -p:Platform=ARM64 --logger "console;verbosity=normal"
+
+  test-osx-x64:
+    name: Test osx-x64
+    needs:
+      - build-magic-db
+      - build-osx-x64
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: ${{ inputs.test_ref || github.ref }}
+      - uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2 # v5
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: magic-db
+          path: artifacts/magic-db
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: osx-x64
+          path: artifacts/osx-x64
+      - name: Install built binaries
+        run: |
+          cp artifacts/magic-db/Magdir.mgc src/Mime/content/magic.mgc
+          cp artifacts/osx-x64/libmagic-1.dylib src/Mime/runtimes/osx-x64/native/libmagic-1.dylib
+      - name: Build and verify native lib
+        run: |
+          dotnet build -p:Platform=x64
+          file test/MimeTests/bin/Debug/net10.0/libmagic-1.dylib
+      - name: Run tests
+        run: dotnet test --no-build -p:Platform=x64 --logger "console;verbosity=normal"
+
   test-osx-arm64:
     name: Test osx-arm64
     needs:
       - build-magic-db
-      - build-linux-x64
-      - build-linux-arm64
-      - build-linux-musl-x64
-      - build-linux-musl-arm64
-      - build-osx-x64
       - build-osx-arm64
-      - build-win-x64
-      - build-win-x86
-      - build-win-arm64
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -556,15 +668,7 @@ jobs:
     name: Test win-x64
     needs:
       - build-magic-db
-      - build-linux-x64
-      - build-linux-arm64
-      - build-linux-musl-x64
-      - build-linux-musl-arm64
-      - build-osx-x64
-      - build-osx-arm64
       - build-win-x64
-      - build-win-x86
-      - build-win-arm64
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -588,17 +692,45 @@ jobs:
       - name: Run tests
         run: dotnet test --logger "console;verbosity=normal"
 
+  test-win-x86:
+    name: Test win-x86
+    needs:
+      - build-magic-db
+      - build-win-x86
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: ${{ inputs.test_ref || github.ref }}
+      - uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2 # v5
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: magic-db
+          path: artifacts/magic-db
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: win-x86
+          path: artifacts/win-x86
+      - name: Install built binaries
+        run: |
+          Copy-Item artifacts/magic-db/Magdir.mgc src/Mime/content/magic.mgc
+          Copy-Item artifacts/win-x86/* src/Mime/runtimes/win-x86/native/ -Force
+      - name: Run tests
+        run: dotnet test -p:Platform=x86 --logger "console;verbosity=normal"
+
   update-repo:
     name: Update runtimes and create PR
     needs:
       - test-linux-x64
+      - test-linux-arm64
+      - test-linux-musl-x64
+      - test-linux-musl-arm64
+      - test-osx-x64
       - test-osx-arm64
       - test-win-x64
-      - build-linux-arm64
-      - build-linux-musl-x64
-      - build-linux-musl-arm64
-      - build-osx-x64
-      - build-win-x86
+      - test-win-x86
       - build-win-arm64
     runs-on: ubuntu-latest
     permissions:
@@ -662,17 +794,17 @@ jobs:
             --body "## Summary
           - Rebuilt all platform native binaries from file/file@${FILE_VERSION}
           - Recompiled magic.mgc database
-          - Tests passed on linux-x64, osx-arm64, and win-x64
+          - Tests passed on all platforms (except win-arm64 — no runner available)
 
           ## Platforms
           | Platform         | Binary                 | Tested |
           | ---------------- | ---------------------- | ------ |
           | linux-x64        | libmagic-1.so          | Yes    |
-          | linux-arm64      | libmagic-1.so          | No     |
-          | linux-musl-x64   | libmagic-1.so          | No     |
-          | linux-musl-arm64 | libmagic-1.so          | No     |
-          | osx-x64          | libmagic-1.dylib       | No     |
+          | linux-arm64      | libmagic-1.so          | Yes    |
+          | linux-musl-x64   | libmagic-1.so          | Yes    |
+          | linux-musl-arm64 | libmagic-1.so          | Yes    |
+          | osx-x64          | libmagic-1.dylib       | Yes    |
           | osx-arm64        | libmagic-1.dylib       | Yes    |
           | win-x64          | libmagic-1.dll + gnurx | Yes    |
-          | win-x86          | libmagic-1.dll + gnurx | No     |
+          | win-x86          | libmagic-1.dll + gnurx | Yes    |
           | win-arm64        | libmagic-1.dll         | No     |"
