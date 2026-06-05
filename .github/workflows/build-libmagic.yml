@@ -377,10 +377,10 @@ jobs:
           cp ~/file-src/src/.libs/libmagic-1.dll $GITHUB_WORKSPACE/output/
           strip $GITHUB_WORKSPACE/output/libmagic-1.dll
           cp /mingw32/bin/libgnurx-0.dll $GITHUB_WORKSPACE/output/
-          ldd ~/file-src/src/.libs/libmagic-1.dll | grep -i mingw | awk '{print $3}' | while read dep; do
-            echo "Copying dependency: $dep"
-            cp "$dep" $GITHUB_WORKSPACE/output/
-          done
+          ldd ~/file-src/src/.libs/libmagic-1.dll \
+            | grep -i '/mingw32/' \
+            | awk '{print $3}' \
+            | xargs -I{} cp {} $GITHUB_WORKSPACE/output/ 2>/dev/null || true
           ls -la $GITHUB_WORKSPACE/output/
 
       - name: Upload
