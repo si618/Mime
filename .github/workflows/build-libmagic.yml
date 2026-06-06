@@ -378,6 +378,7 @@ jobs:
           strip $GITHUB_WORKSPACE/output/libmagic-1.dll
           cp /mingw32/bin/libgnurx-0.dll $GITHUB_WORKSPACE/output/
           cp /mingw32/bin/libgcc_s_dw2-1.dll $GITHUB_WORKSPACE/output/
+          cp /mingw32/bin/libwinpthread-1.dll $GITHUB_WORKSPACE/output/
           ls -la $GITHUB_WORKSPACE/output/
 
       - name: Upload
