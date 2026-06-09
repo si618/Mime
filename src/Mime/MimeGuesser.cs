@@ -1,7 +1,4 @@
-﻿using System;
-using System.IO;
-
-namespace HeyRed.Mime;
+﻿namespace HeyRed.Mime;
 
 /// <summary>
 /// Static "facade" for <see cref="Magic"/>
