@@ -1,13 +1,61 @@
-﻿using HeyRed.Mime;
-
+﻿using System;
 using System.IO;
+
+using HeyRed.Mime;
 
 using Xunit;
 
 namespace MimeTests;
 
-public class GuessMime
+public class GuessMime : IDisposable
 {
+    private readonly string _unicodeTempDir;
+
+    public GuessMime()
+    {
+        _unicodeTempDir = Path.Combine(Path.GetTempPath(), "MimeTests_إظهار_テスト");
+        Directory.CreateDirectory(_unicodeTempDir);
+    }
+
+    public void Dispose()
+    {
+        if (Directory.Exists(_unicodeTempDir))
+        {
+            Directory.Delete(_unicodeTempDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void GuessMimeFromFilePath_UnicodeCharacters_ReturnsMimeType()
+    {
+        // Arrange
+        var unicodePath = Path.Combine(_unicodeTempDir, "إظهار لقطات الشاشة.jpeg");
+        File.Copy(ResourceUtils.GetJpegFileFixture, unicodePath, overwrite: true);
+        var expected = "image/jpeg";
+
+        // Act
+        string actual = MimeGuesser.GuessMimeType(unicodePath);
+
+        // Assert
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void GuessMimeFromFileInfo_UnicodeCharacters_ReturnsMimeType()
+    {
+        // Arrange
+        var unicodePath = Path.Combine(_unicodeTempDir, "テスト画像.jpeg");
+        File.Copy(ResourceUtils.GetJpegFileFixture, unicodePath, overwrite: true);
+        var expected = "image/jpeg";
+
+        // Act
+        var fi = new FileInfo(unicodePath);
+        string actual = fi.GuessMimeType();
+
+        // Assert
+        Assert.Equal(expected, actual);
+    }
+
     [Fact]
     public void GuessMimeFromFilePath()
     {
