@@ -1,8 +1,4 @@
-﻿using HeyRed.Mime;
-
-using Xunit;
-
-namespace MimeTests;
+﻿namespace MimeTests;
 
 public class MagicMeta
 {

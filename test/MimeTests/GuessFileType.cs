@@ -1,10 +1,4 @@
-﻿using HeyRed.Mime;
-
-using System.IO;
-
-using Xunit;
-
-namespace MimeTests;
+﻿namespace MimeTests;
 
 public class GuessFileType
 {

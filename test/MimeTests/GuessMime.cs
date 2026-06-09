@@ -1,11 +1,4 @@
-﻿using System;
-using System.IO;
-
-using HeyRed.Mime;
-
-using Xunit;
-
-namespace MimeTests;
+﻿namespace MimeTests;
 
 public class GuessMime : IDisposable
 {

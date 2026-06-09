@@ -1,7 +1,4 @@
-﻿using System;
-using System.IO;
-
-namespace MimeTests;
+﻿namespace MimeTests;
 
 public static class ResourceUtils
 {
