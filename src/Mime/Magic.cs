@@ -63,6 +63,12 @@ public sealed class Magic : IDisposable
     {
         ThrowIfDisposed();
 
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && HasNonAsciiChars(filePath))
+        {
+            byte[] buffer = File.ReadAllBytes(filePath);
+            return Read(buffer, buffer.Length);
+        }
+
         var str = Marshal.PtrToStringAnsi(MagicNative.magic_file(_magic, filePath));
         if (str == null)
         {
@@ -71,6 +77,8 @@ public sealed class Magic : IDisposable
 
         return str;
     }
+
+    private static bool HasNonAsciiChars(string value) => !System.Text.Ascii.IsValid(value);
 
     /// <summary>
     /// Reads contents from buffer.
