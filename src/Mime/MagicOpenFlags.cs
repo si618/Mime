@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace HeyRed.Mime;
+﻿namespace HeyRed.Mime;
 
 /// <summary>
 /// Contains libmagic options flags.

@@ -1,6 +1,6 @@
-﻿using System;
-using System.IO;
-using System.Runtime.InteropServices;
+#if NET6_0_OR_GREATER
+using System.Buffers;
+#endif
 
 namespace HeyRed.Mime;
 
@@ -78,7 +78,18 @@ public sealed class Magic : IDisposable
         return str;
     }
 
+#if NET8_0_OR_GREATER
     private static bool HasNonAsciiChars(string value) => !System.Text.Ascii.IsValid(value);
+#else
+    private static bool HasNonAsciiChars(string value)
+    {
+        foreach (char c in value)
+        {
+            if (c > 127) return true;
+        }
+        return false;
+    }
+#endif
 
     /// <summary>
     /// Reads contents from buffer.
@@ -116,9 +127,30 @@ public sealed class Magic : IDisposable
 
         if (stream == null)
         {
-            throw new ArgumentException(nameof(stream));
+            throw new ArgumentNullException(nameof(stream));
         }
 
+#if NET6_0_OR_GREATER
+        byte[] rented = ArrayPool<byte>.Shared.Rent(bufferSize);
+        try
+        {
+            int totalRead = 0;
+            int read;
+            while (totalRead < bufferSize &&
+                   (read = stream.Read(rented, totalRead, bufferSize - totalRead)) > 0)
+            {
+                totalRead += read;
+            }
+
+            if (stream.CanSeek) stream.Position = 0;
+
+            return Read(rented, totalRead);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(rented);
+        }
+#else
         byte[] buffer = new byte[16 * 1024];
         using var ms = new MemoryStream(bufferSize);
         int readed;
@@ -131,6 +163,7 @@ public sealed class Magic : IDisposable
         if (stream.CanSeek) stream.Position = 0;
 
         return Read(ms.ToArray(), (int)ms.Length);
+#endif
     }
 
     /// <summary>

@@ -104,4 +104,36 @@ public class GuessMime : IDisposable
 
         Assert.Equal(expected, actual);
     }
+
+    [Fact]
+    public void GuessMimeFromStream_RewindsSeekableStream()
+    {
+        // Arrange
+        using var stream = File.OpenRead(ResourceUtils.GetJpegFileFixture);
+
+        // Act
+        MimeGuesser.GuessMimeType(stream);
+
+        // Assert
+        Assert.Equal(0, stream.Position);
+    }
+
+    [Fact]
+    public void GuessMimeFromStream_SmallBuffer_ReturnsMimeType()
+    {
+        // Arrange
+        using var stream = File.OpenRead(ResourceUtils.GetJpegFileFixture);
+        using var magic = new Magic(
+            MagicOpenFlags.MAGIC_ERROR |
+            MagicOpenFlags.MAGIC_MIME_TYPE |
+            MagicOpenFlags.MAGIC_NO_CHECK_COMPRESS |
+            MagicOpenFlags.MAGIC_NO_CHECK_ELF |
+            MagicOpenFlags.MAGIC_NO_CHECK_APPTYPE);
+
+        // Act
+        string actual = magic.Read(stream, 256);
+
+        // Assert
+        Assert.Equal("image/jpeg", actual);
+    }
 }

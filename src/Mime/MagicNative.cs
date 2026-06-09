@@ -1,7 +1,4 @@
-﻿using System;
-using System.Runtime.InteropServices;
-
-namespace HeyRed.Mime;
+﻿namespace HeyRed.Mime;
 
 internal static class MagicNative
 {
