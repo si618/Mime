@@ -167,7 +167,7 @@ jobs:
     name: Build linux-musl-x64
     needs: validate-inputs
     runs-on: ubuntu-latest
-    container: alpine@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11 # alpine:3.21
+    container: alpine@sha256:fa1b3b8cd12d2b2ded5ef366f99b5a7556884646af680404989d626535a3ac14 # alpine:3.21
     steps:
       - name: Install dependencies
         run: apk add --no-cache git build-base autoconf automake libtool zlib-dev
