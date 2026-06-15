@@ -11,6 +11,8 @@ on:
         description: 'Git ref for test code (branch/tag with updated tests)'
         required: false
         default: ''
+  schedule:
+    - cron: '0 6 * * 1'
 
 env:
   FILE_REPO: https://github.com/file/file.git
@@ -19,19 +21,51 @@ env:
   LLVM_MINGW_SHA256: '3de3eda9377bbaf35f8c9001f190380f63b8ee981fa55d3ae9d7cce7c6ad7c70'
 
 jobs:
-  validate-inputs:
-    name: Validate inputs
+  resolve-version:
+    name: Resolve file version
     runs-on: ubuntu-latest
+    outputs:
+      file_version: ${{ steps.resolve.outputs.file_version }}
+      should_run: ${{ steps.resolve.outputs.should_run }}
     steps:
-      - name: Validate file_version
+      - name: Resolve and validate file version
+        id: resolve
         env:
-          FILE_VERSION: ${{ inputs.file_version }}
+          GH_TOKEN: ${{ github.token }}
+          INPUT_VERSION: ${{ inputs.file_version }}
         run: |
+          if [ -n "$INPUT_VERSION" ]; then
+            FILE_VERSION="$INPUT_VERSION"
+          else
+            # Scheduled run: fetch latest FILE* tag from upstream
+            FILE_VERSION=$(curl -fsSL \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              "https://api.github.com/repos/file/file/tags?per_page=100" \
+              | jq -r '[.[].name | select(test("^FILE[0-9]"))] | first')
+            echo "Latest upstream tag: $FILE_VERSION"
+
+            # Skip if a PR already exists for this version (any state)
+            BRANCH="update-libmagic-${FILE_VERSION}"
+            PR_COUNT=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$BRANCH" --state all --json number --jq 'length')
+            if [ "$PR_COUNT" -gt 0 ]; then
+              echo "Already have a PR for $FILE_VERSION — skipping"
+              echo "should_run=false" >> "$GITHUB_OUTPUT"
+              echo "file_version=$FILE_VERSION" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+
           if ! echo "$FILE_VERSION" | grep -qE '^[a-zA-Z0-9._-]+$'; then
             echo "::error::Invalid file_version: must be alphanumeric with . _ -"
             exit 1
           fi
+
+          echo "file_version=$FILE_VERSION" >> "$GITHUB_OUTPUT"
+          echo "should_run=true" >> "$GITHUB_OUTPUT"
+
       - name: Validate test_ref
+        if: steps.resolve.outputs.should_run == 'true'
         env:
           TEST_REF: ${{ inputs.test_ref }}
         run: |
@@ -44,12 +78,13 @@ jobs:
 
   build-magic-db:
     name: Compile magic.mgc
-    needs: validate-inputs
+    needs: resolve-version
+    if: needs.resolve-version.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Clone file source
         env:
-          FILE_VERSION: ${{ inputs.file_version }}
+          FILE_VERSION: ${{ needs.resolve-version.outputs.file_version }}
         run: git clone --depth 1 --branch "$FILE_VERSION" $FILE_REPO /tmp/file-src
 
       - name: Install dependencies
@@ -74,12 +109,13 @@ jobs:
 
   build-linux-x64:
     name: Build linux-x64
-    needs: validate-inputs
+    needs: resolve-version
+    if: needs.resolve-version.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Clone file source
         env:
-          FILE_VERSION: ${{ inputs.file_version }}
+          FILE_VERSION: ${{ needs.resolve-version.outputs.file_version }}
         run: git clone --depth 1 --branch "$FILE_VERSION" $FILE_REPO /tmp/file-src
 
       - name: Install dependencies
@@ -107,12 +143,13 @@ jobs:
 
   build-linux-arm64:
     name: Build linux-arm64
-    needs: validate-inputs
+    needs: resolve-version
+    if: needs.resolve-version.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Clone file source
         env:
-          FILE_VERSION: ${{ inputs.file_version }}
+          FILE_VERSION: ${{ needs.resolve-version.outputs.file_version }}
         run: git clone --depth 1 --branch "$FILE_VERSION" $FILE_REPO /tmp/file-src
 
       - name: Set up arm64 cross-compilation
@@ -165,7 +202,8 @@ jobs:
 
   build-linux-musl-x64:
     name: Build linux-musl-x64
-    needs: validate-inputs
+    needs: resolve-version
+    if: needs.resolve-version.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     container: alpine@sha256:a2d49ea686c2adfe3c992e47dc3b5e7fa6e6b5055609400dc2acaeb241c829f4 # alpine:3.21
     steps:
@@ -174,7 +212,7 @@ jobs:
 
       - name: Clone file source
         env:
-          FILE_VERSION: ${{ inputs.file_version }}
+          FILE_VERSION: ${{ needs.resolve-version.outputs.file_version }}
         run: git clone --depth 1 --branch "$FILE_VERSION" $FILE_REPO /tmp/file-src
 
       - name: Build
@@ -199,7 +237,8 @@ jobs:
 
   build-linux-musl-arm64:
     name: Build linux-musl-arm64
-    needs: validate-inputs
+    needs: resolve-version
+    if: needs.resolve-version.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Set up QEMU
@@ -209,7 +248,7 @@ jobs:
 
       - name: Build in arm64 Alpine container
         env:
-          FILE_VERSION: ${{ inputs.file_version }}
+          FILE_VERSION: ${{ needs.resolve-version.outputs.file_version }}
         run: |
           docker run --rm --platform linux/arm64 \
             -e FILE_VERSION="$FILE_VERSION" \
@@ -235,12 +274,13 @@ jobs:
 
   build-osx-x64:
     name: Build osx-x64
-    needs: validate-inputs
+    needs: resolve-version
+    if: needs.resolve-version.outputs.should_run == 'true'
     runs-on: macos-latest
     steps:
       - name: Clone file source
         env:
-          FILE_VERSION: ${{ inputs.file_version }}
+          FILE_VERSION: ${{ needs.resolve-version.outputs.file_version }}
         run: git clone --depth 1 --branch "$FILE_VERSION" $FILE_REPO /tmp/file-src
 
       - name: Install dependencies
@@ -269,12 +309,13 @@ jobs:
 
   build-osx-arm64:
     name: Build osx-arm64
-    needs: validate-inputs
+    needs: resolve-version
+    if: needs.resolve-version.outputs.should_run == 'true'
     runs-on: macos-latest
     steps:
       - name: Clone file source
         env:
-          FILE_VERSION: ${{ inputs.file_version }}
+          FILE_VERSION: ${{ needs.resolve-version.outputs.file_version }}
         run: git clone --depth 1 --branch "$FILE_VERSION" $FILE_REPO /tmp/file-src
 
       - name: Install dependencies
@@ -302,7 +343,8 @@ jobs:
 
   build-win-x64:
     name: Build win-x64
-    needs: validate-inputs
+    needs: resolve-version
+    if: needs.resolve-version.outputs.should_run == 'true'
     runs-on: windows-latest
     defaults:
       run:
@@ -319,7 +361,7 @@ jobs:
 
       - name: Clone file source
         env:
-          FILE_VERSION: ${{ inputs.file_version }}
+          FILE_VERSION: ${{ needs.resolve-version.outputs.file_version }}
         run: git clone --depth 1 --branch "$FILE_VERSION" $FILE_REPO ~/file-src
 
       - name: Build
@@ -344,7 +386,8 @@ jobs:
 
   build-win-x86:
     name: Build win-x86
-    needs: validate-inputs
+    needs: resolve-version
+    if: needs.resolve-version.outputs.should_run == 'true'
     runs-on: windows-latest
     defaults:
       run:
@@ -361,7 +404,7 @@ jobs:
 
       - name: Clone file source
         env:
-          FILE_VERSION: ${{ inputs.file_version }}
+          FILE_VERSION: ${{ needs.resolve-version.outputs.file_version }}
         run: git clone --depth 1 --branch "$FILE_VERSION" $FILE_REPO ~/file-src
 
       - name: Build
@@ -389,7 +432,8 @@ jobs:
 
   build-win-arm64:
     name: Build win-arm64
-    needs: validate-inputs
+    needs: resolve-version
+    if: needs.resolve-version.outputs.should_run == 'true'
     runs-on: windows-latest
     defaults:
       run:
@@ -422,7 +466,7 @@ jobs:
 
       - name: Clone file source
         env:
-          FILE_VERSION: ${{ inputs.file_version }}
+          FILE_VERSION: ${{ needs.resolve-version.outputs.file_version }}
         run: git clone --depth 1 --branch "$FILE_VERSION" $FILE_REPO ~/file-src
 
       - name: Build native file command first
@@ -482,8 +526,10 @@ jobs:
   test-linux-x64:
     name: Test linux-x64
     needs:
+      - resolve-version
       - build-magic-db
       - build-linux-x64
+    if: needs.resolve-version.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -510,8 +556,10 @@ jobs:
   test-linux-arm64:
     name: Test linux-arm64
     needs:
+      - resolve-version
       - build-magic-db
       - build-linux-arm64
+    if: needs.resolve-version.outputs.should_run == 'true'
     runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -542,8 +590,10 @@ jobs:
   test-linux-musl-x64:
     name: Test linux-musl-x64
     needs:
+      - resolve-version
       - build-magic-db
       - build-linux-musl-x64
+    if: needs.resolve-version.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -572,8 +622,10 @@ jobs:
   test-linux-musl-arm64:
     name: Test linux-musl-arm64
     needs:
+      - resolve-version
       - build-magic-db
       - build-linux-musl-arm64
+    if: needs.resolve-version.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Set up QEMU
@@ -606,8 +658,10 @@ jobs:
   test-osx-x64:
     name: Test osx-x64
     needs:
+      - resolve-version
       - build-magic-db
       - build-osx-x64
+    if: needs.resolve-version.outputs.should_run == 'true'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -639,8 +693,10 @@ jobs:
   test-osx-arm64:
     name: Test osx-arm64
     needs:
+      - resolve-version
       - build-magic-db
       - build-osx-arm64
+    if: needs.resolve-version.outputs.should_run == 'true'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -671,8 +727,10 @@ jobs:
   test-win-x64:
     name: Test win-x64
     needs:
+      - resolve-version
       - build-magic-db
       - build-win-x64
+    if: needs.resolve-version.outputs.should_run == 'true'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -699,8 +757,10 @@ jobs:
   test-win-x86:
     name: Test win-x86
     needs:
+      - resolve-version
       - build-magic-db
       - build-win-x86
+    if: needs.resolve-version.outputs.should_run == 'true'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -737,6 +797,7 @@ jobs:
   update-repo:
     name: Update runtimes and create PR
     needs:
+      - resolve-version
       - test-linux-x64
       - test-linux-arm64
       - test-linux-musl-x64
@@ -746,6 +807,7 @@ jobs:
       - test-win-x64
       - test-win-x86
       - build-win-arm64
+    if: needs.resolve-version.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -789,7 +851,7 @@ jobs:
         if: steps.changes.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FILE_VERSION: ${{ inputs.file_version }}
+          FILE_VERSION: ${{ needs.resolve-version.outputs.file_version }}
         run: |
           BRANCH="update-libmagic-${FILE_VERSION}"
           git config user.name "github-actions[bot]"
