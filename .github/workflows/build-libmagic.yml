@@ -181,14 +181,17 @@ jobs:
           autoreconf -fiv
           ./configure
           make -j$(nproc)
-          cp src/.libs/file src/file-native
+          mkdir -p /tmp/file-native
+          cp src/.libs/file /tmp/file-native/
+          cp src/.libs/libmagic.so.1.0.0 /tmp/file-native/
+          ln -sf libmagic.so.1.0.0 /tmp/file-native/libmagic.so.1
           make distclean
 
       - name: Cross-compile for aarch64
         working-directory: /tmp/file-src
         run: |
           ./configure --host=aarch64-linux-gnu --disable-static --enable-shared
-          make -j$(nproc) FILE_COMPILE=/tmp/file-src/src/file-native
+          LD_LIBRARY_PATH=/tmp/file-native make -j$(nproc) FILE_COMPILE=/tmp/file-native/file
 
       - name: Prepare artifact
         run: |
@@ -585,10 +588,10 @@ jobs:
           cp artifacts/linux-arm64/libmagic-1.so src/Mime/runtimes/linux-arm64/native/libmagic-1.so
       - name: Build and verify native lib
         run: |
-          dotnet build -p:Platform=ARM64
+          dotnet build test/MimeTests/MimeTests.csproj -p:Platform=ARM64
           file test/MimeTests/bin/Debug/net10.0/libmagic-1.so
       - name: Run tests
-        run: dotnet test --no-build -p:Platform=ARM64 --logger "console;verbosity=normal"
+        run: dotnet test test/MimeTests/MimeTests.csproj --no-build -p:Platform=ARM64 --logger "console;verbosity=normal"
 
   test-linux-musl-x64:
     name: Test linux-musl-x64
@@ -656,7 +659,7 @@ jobs:
             -v "${{ github.workspace }}:/workspace" \
             -w /workspace \
             mcr.microsoft.com/dotnet/sdk:10.0-alpine \
-            dotnet test -p:Platform=ARM64 --logger "console;verbosity=normal"
+            dotnet test test/MimeTests/MimeTests.csproj -p:Platform=ARM64 --logger "console;verbosity=normal"
 
   test-osx-x64:
     name: Test osx-x64
@@ -688,10 +691,10 @@ jobs:
           cp artifacts/osx-x64/libmagic-1.dylib src/Mime/runtimes/osx-x64/native/libmagic-1.dylib
       - name: Build and verify native lib
         run: |
-          dotnet build -p:Platform=x64
+          dotnet build test/MimeTests/MimeTests.csproj -p:Platform=x64
           file test/MimeTests/bin/Debug/net10.0/libmagic-1.dylib
       - name: Run tests
-        run: dotnet test --no-build -p:Platform=x64 --logger "console;verbosity=normal"
+        run: dotnet test test/MimeTests/MimeTests.csproj --no-build -p:Platform=x64 --logger "console;verbosity=normal"
 
   test-osx-arm64:
     name: Test osx-arm64
@@ -722,10 +725,10 @@ jobs:
           cp artifacts/osx-arm64/libmagic-1.dylib src/Mime/runtimes/osx-arm64/native/libmagic-1.dylib
       - name: Build and verify native lib
         run: |
-          dotnet build -p:Platform=ARM64
+          dotnet build test/MimeTests/MimeTests.csproj -p:Platform=ARM64
           file test/MimeTests/bin/Debug/net10.0/libmagic-1.dylib
       - name: Run tests
-        run: dotnet test --no-build -p:Platform=ARM64 --logger "console;verbosity=normal"
+        run: dotnet test test/MimeTests/MimeTests.csproj --no-build -p:Platform=ARM64 --logger "console;verbosity=normal"
 
   test-win-x64:
     name: Test win-x64

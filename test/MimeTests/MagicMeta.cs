@@ -3,7 +3,7 @@
 public class MagicMeta
 {
     [Fact]
-    public void CheckVersion() => Assert.Equal(547, Magic.Version);
+    public void CheckVersion() => Assert.Equal(548, Magic.Version);
 
     [Fact]
     public void GetFlags()
