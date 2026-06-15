@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       file_version:
-        description: 'file/file git tag (e.g. FILE5_47)'
-        required: true
-        default: 'FILE5_47'
+        description: 'file/file git tag — leave blank to use the latest tag'
+        required: false
+        default: ''
       test_ref:
         description: 'Git ref for test code (branch/tag with updated tests)'
         required: false
@@ -33,11 +33,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           INPUT_VERSION: ${{ inputs.file_version }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           if [ -n "$INPUT_VERSION" ]; then
             FILE_VERSION="$INPUT_VERSION"
           else
-            # Scheduled run: fetch latest FILE* tag from upstream
+            # Scheduled run or manual dispatch with no version: fetch latest FILE* tag from upstream
             FILE_VERSION=$(curl -fsSL \
               -H "Accept: application/vnd.github+json" \
               -H "Authorization: Bearer $GH_TOKEN" \
@@ -45,14 +46,16 @@ jobs:
               | jq -r '[.[].name | select(test("^FILE[0-9]"))] | first')
             echo "Latest upstream tag: $FILE_VERSION"
 
-            # Skip if a PR already exists for this version (any state)
-            BRANCH="update-libmagic-${FILE_VERSION}"
-            PR_COUNT=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$BRANCH" --state all --json number --jq 'length')
-            if [ "$PR_COUNT" -gt 0 ]; then
-              echo "Already have a PR for $FILE_VERSION — skipping"
-              echo "should_run=false" >> "$GITHUB_OUTPUT"
-              echo "file_version=$FILE_VERSION" >> "$GITHUB_OUTPUT"
-              exit 0
+            # On scheduled runs only: skip if a PR already exists for this version (any state)
+            if [ "$EVENT_NAME" = "schedule" ]; then
+              BRANCH="update-libmagic-${FILE_VERSION}"
+              PR_COUNT=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$BRANCH" --state all --json number --jq 'length')
+              if [ "$PR_COUNT" -gt 0 ]; then
+                echo "Already have a PR for $FILE_VERSION — skipping"
+                echo "should_run=false" >> "$GITHUB_OUTPUT"
+                echo "file_version=$FILE_VERSION" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
             fi
           fi
 
