@@ -15,13 +15,13 @@ public sealed class Magic : IDisposable
     /// Contains the version number of this library which is compiled
     /// into the shared library using the constant.
     /// </summary>
-    public static int Version => MagicNative.magic_version();
+    public static int Version => MagicNative.MagicVersion();
 
     private string LastError
     {
         get
         {
-            var err = Marshal.PtrToStringAnsi(MagicNative.magic_error(_magic));
+            var err = Marshal.PtrToStringAnsi(MagicNative.MagicError(_magic));
             return err != null ?
                 char.ToUpper(err[0]) + err[1..] :
                 string.Empty;
@@ -37,7 +37,7 @@ public sealed class Magic : IDisposable
     {
         lock (_magicLock)
         {
-            _magic = MagicNative.magic_open(flags);
+            _magic = MagicNative.MagicOpen(flags);
             if (_magic == IntPtr.Zero)
             {
                 throw new MagicException(LastError, "Cannot create magic cookie.");
@@ -45,10 +45,10 @@ public sealed class Magic : IDisposable
 
             dbPath ??= MagicUtils.GetDefaultMagicPath();
 
-            if (MagicNative.magic_load(_magic, dbPath) != 0)
+            if (MagicNative.MagicLoad(_magic, dbPath) != 0)
             {
                 var error = LastError;
-                MagicNative.magic_close(_magic);
+                MagicNative.MagicClose(_magic);
                 _magic = IntPtr.Zero;
                 throw new MagicException(error, "Unable to load magic database file.");
             }
@@ -70,7 +70,7 @@ public sealed class Magic : IDisposable
             return Read(buffer, buffer.Length);
         }
 
-        return Marshal.PtrToStringAnsi(MagicNative.magic_file(_magic, filePath))
+        return Marshal.PtrToStringAnsi(MagicNative.MagicFile(_magic, filePath))
             ?? throw new MagicException(LastError);
     }
 
@@ -91,7 +91,7 @@ public sealed class Magic : IDisposable
 
         var length = buffer.Length < bufferSize ? buffer.Length : bufferSize;
 
-        return Marshal.PtrToStringAnsi(MagicNative.magic_buffer(_magic, buffer, length))
+        return Marshal.PtrToStringAnsi(MagicNative.MagicBuffer(_magic, buffer, length))
             ?? throw new MagicException(LastError);
     }
 
@@ -139,7 +139,7 @@ public sealed class Magic : IDisposable
     {
         ThrowIfDisposed();
 
-        return MagicNative.magic_getflags(_magic);
+        return MagicNative.MagicGetFlags(_magic);
     }
 
     /// <summary>
@@ -151,7 +151,7 @@ public sealed class Magic : IDisposable
     {
         ThrowIfDisposed();
 
-        if (MagicNative.magic_setflags(_magic, flags) < 0)
+        if (MagicNative.MagicSetFlags(_magic, flags) < 0)
         {
             throw new MagicException("Utime/Utimes not supported.");
         }
@@ -167,7 +167,7 @@ public sealed class Magic : IDisposable
     {
         ThrowIfDisposed();
 
-        if (MagicNative.magic_getparam(_magic, param, out int value) < 0)
+        if (MagicNative.MagicGetParam(_magic, param, out int value) < 0)
         {
             throw new MagicException($"Invalid param \"{param}\".");
         }
@@ -185,7 +185,7 @@ public sealed class Magic : IDisposable
     {
         ThrowIfDisposed();
 
-        if (MagicNative.magic_setparam(_magic, param, ref value) < 0)
+        if (MagicNative.MagicSetParam(_magic, param, ref value) < 0)
         {
             throw new MagicException($"Invalid param \"{param}\".");
         }
@@ -202,14 +202,13 @@ public sealed class Magic : IDisposable
 
         dbPath ??= MagicUtils.GetDefaultMagicPath();
 
-        int result = MagicNative.magic_check(_magic, dbPath);
+        int result = MagicNative.MagicCheck(_magic, dbPath);
         if (result < 0)
         {
             throw new MagicException(LastError);
         }
     }
 
-    // TODO: Tests
     /// <summary>
     /// Can be used to compile the colon separated list of database files.
     /// </summary>
@@ -218,7 +217,27 @@ public sealed class Magic : IDisposable
     {
         ThrowIfDisposed();
 
-        if (MagicNative.magic_compile(_magic, dbPath ?? "") < 0)
+        if (MagicNative.MagicCompile(_magic, dbPath ?? "") < 0)
+        {
+            throw new MagicException(LastError);
+        }
+    }
+
+    /// <summary>
+    /// Lists the parsed magic database entries to stdout.
+    /// </summary>
+    /// <remarks>
+    /// Output is written to native stdout by libmagic and cannot be
+    /// captured via <see cref="Console.SetOut"/>.
+    /// </remarks>
+    /// <param name="dbPath"></param>
+    public void ListDatabase(string? dbPath = null)
+    {
+        ThrowIfDisposed();
+
+        dbPath ??= MagicUtils.GetDefaultMagicPath();
+
+        if (MagicNative.MagicList(_magic, dbPath) < 0)
         {
             throw new MagicException(LastError);
         }
@@ -234,7 +253,7 @@ public sealed class Magic : IDisposable
     {
         if (_magic != IntPtr.Zero)
         {
-            MagicNative.magic_close(_magic);
+            MagicNative.MagicClose(_magic);
         }
     }
 

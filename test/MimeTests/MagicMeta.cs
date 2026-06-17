@@ -33,6 +33,16 @@ public class MagicMeta
     }
 
     [Fact]
+    public void ListDatabase_DoesNotThrow()
+    {
+        // Arrange
+        using var magic = new Magic(MagicOpenFlags.MAGIC_NONE);
+
+        // Act & Assert
+        magic.ListDatabase();
+    }
+
+    [Fact]
     public void GetParams()
     {
         using var magic = new Magic(MagicOpenFlags.MAGIC_NONE);
