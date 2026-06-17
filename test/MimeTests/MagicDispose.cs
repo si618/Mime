@@ -104,6 +104,17 @@ public class MagicDispose
     }
 
     [Fact]
+    public void ListDatabase_AfterDispose_ThrowsObjectDisposedException()
+    {
+        // Arrange
+        var magic = new Magic(MagicOpenFlags.MAGIC_MIME_TYPE);
+        magic.Dispose();
+
+        // Act & Assert
+        Assert.Throws<ObjectDisposedException>(() => magic.ListDatabase());
+    }
+
+    [Fact]
     public void Dispose_CalledTwice_DoesNotThrow()
     {
         // Arrange
