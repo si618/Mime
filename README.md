@@ -72,8 +72,10 @@ See all [flags](src/Mime/MagicOpenFlags.cs) for more info.
 ## Building
 
 ```sh
+git clone https://github.com/si618/Mime.git
+cd Mime
 dotnet build
-dotnet test
+dotnet test --no-build
 dotnet pack -c Release -o nupkg
 ```
 
