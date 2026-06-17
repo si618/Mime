@@ -1,6 +1,4 @@
-#if NET6_0_OR_GREATER
 using System.Buffers;
-#endif
 
 namespace HeyRed.Mime;
 
@@ -25,7 +23,7 @@ public sealed class Magic : IDisposable
         {
             var err = Marshal.PtrToStringAnsi(MagicNative.magic_error(_magic));
             return err != null ?
-                char.ToUpper(err[0]) + err.Substring(1) :
+                char.ToUpper(err[0]) + err[1..] :
                 string.Empty;
         }
     }
@@ -76,18 +74,7 @@ public sealed class Magic : IDisposable
             ?? throw new MagicException(LastError);
     }
 
-#if NET8_0_OR_GREATER
     private static bool HasNonAsciiChars(string value) => !System.Text.Ascii.IsValid(value);
-#else
-    private static bool HasNonAsciiChars(string value)
-    {
-        foreach (char c in value)
-        {
-            if (c > 127) return true;
-        }
-        return false;
-    }
-#endif
 
     /// <summary>
     /// Reads contents from buffer.
@@ -99,9 +86,8 @@ public sealed class Magic : IDisposable
     {
         ThrowIfDisposed();
 
-        // ThrowIfNull/ThrowIfNegative unavailable on netstandard2.0/net472/net48
-        if (buffer == null) throw new ArgumentNullException(nameof(buffer));
-        if (bufferSize < 0) throw new ArgumentOutOfRangeException(nameof(bufferSize));
+        ArgumentNullException.ThrowIfNull(buffer);
+        ArgumentOutOfRangeException.ThrowIfNegative(bufferSize);
 
         var length = buffer.Length < bufferSize ? buffer.Length : bufferSize;
 
@@ -122,12 +108,8 @@ public sealed class Magic : IDisposable
     {
         ThrowIfDisposed();
 
-        if (stream == null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
+        ArgumentNullException.ThrowIfNull(stream);
 
-#if NET6_0_OR_GREATER
         byte[] rented = ArrayPool<byte>.Shared.Rent(bufferSize);
         try
         {
@@ -147,20 +129,6 @@ public sealed class Magic : IDisposable
         {
             ArrayPool<byte>.Shared.Return(rented);
         }
-#else
-        byte[] buffer = new byte[16 * 1024];
-        using var ms = new MemoryStream(bufferSize);
-        int readed;
-        while ((readed = stream.Read(buffer, 0, buffer.Length)) > 0)
-        {
-            ms.Write(buffer, 0, readed);
-            if (ms.Length >= bufferSize) break;
-        }
-
-        if (stream.CanSeek) stream.Position = 0;
-
-        return Read(ms.ToArray(), (int)ms.Length);
-#endif
     }
 
     /// <summary>
@@ -260,13 +228,7 @@ public sealed class Magic : IDisposable
 
     private bool _disposed = false;
 
-    private void ThrowIfDisposed()
-    {
-        if (_disposed)
-        {
-            throw new ObjectDisposedException(GetType().Name);
-        }
-    }
+    private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, this);
 
     private void DoDispose()
     {

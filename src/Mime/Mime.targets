@@ -3,12 +3,4 @@
   <ImportGroup>
     <Import Project="Platform.props" />
   </ImportGroup>
-  <!-- .NET Framework -->
-  <ItemGroup Condition=" '$(IsX64)' == 'true' AND '$(IsWindows)' == 'true' AND '$(TargetFrameworkIdentifier)' == '.NETFramework' ">
-    <NativeLibs Include="$(MSBuildThisFileDirectory)\..\runtimes\win-x64\native\*" />
-    <None Include="@(NativeLibs)">
-      <Copy>%(RecursiveDir)%(FileName)%(Extension)</Copy>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
 </Project>

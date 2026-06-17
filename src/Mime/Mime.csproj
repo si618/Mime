@@ -3,9 +3,9 @@
   <PropertyGroup>
     <Description>.NET wrapper for libmagic.</Description>
     <AssemblyTitle>Mime</AssemblyTitle>
-    <Version>3.9.0</Version>
+    <Version>4.0.0</Version>
     <Authors>red</Authors>
-    <TargetFrameworks>netstandard2.0;net472;net48;net10.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <PackageId>Mime</PackageId>
@@ -18,8 +18,6 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AssemblyName>Mime</AssemblyName>
     <RootNamespace>HeyRed.Mime</RootNamespace>
-    <AssemblyOriginatorKeyFile>../../../key.snk</AssemblyOriginatorKeyFile>
-    <SignAssembly Condition=" '$(Configuration)' != 'Debug' ">true</SignAssembly>
     <Configurations>Debug;Release</Configurations>
     <Platforms>AnyCPU;ARM64;x64;x86</Platforms>
   </PropertyGroup>

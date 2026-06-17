@@ -26,9 +26,7 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Pack
-        # key.snk is not committed to the repo — signing is disabled since this
-        # is a fork artifact, not an official signed release
-        run: dotnet pack src/Mime/Mime.csproj -c Release -o nupkg -p:SignAssembly=false
+        run: dotnet pack src/Mime/Mime.csproj -c Release -o nupkg
 
       - name: Upload NuGet package
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
