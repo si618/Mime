@@ -49,7 +49,10 @@ public sealed class Magic : IDisposable
 
             if (MagicNative.magic_load(_magic, dbPath) != 0)
             {
-                throw new MagicException(LastError, "Unable to load magic database file.");
+                var error = LastError;
+                MagicNative.magic_close(_magic);
+                _magic = IntPtr.Zero;
+                throw new MagicException(error, "Unable to load magic database file.");
             }
         }
     }
@@ -69,13 +72,8 @@ public sealed class Magic : IDisposable
             return Read(buffer, buffer.Length);
         }
 
-        var str = Marshal.PtrToStringAnsi(MagicNative.magic_file(_magic, filePath));
-        if (str == null)
-        {
-            throw new MagicException(LastError);
-        }
-
-        return str;
+        return Marshal.PtrToStringAnsi(MagicNative.magic_file(_magic, filePath))
+            ?? throw new MagicException(LastError);
     }
 
 #if NET8_0_OR_GREATER
@@ -101,15 +99,14 @@ public sealed class Magic : IDisposable
     {
         ThrowIfDisposed();
 
+        // ThrowIfNull/ThrowIfNegative unavailable on netstandard2.0/net472/net48
+        if (buffer == null) throw new ArgumentNullException(nameof(buffer));
+        if (bufferSize < 0) throw new ArgumentOutOfRangeException(nameof(bufferSize));
+
         var length = buffer.Length < bufferSize ? buffer.Length : bufferSize;
 
-        var str = Marshal.PtrToStringAnsi(MagicNative.magic_buffer(_magic, buffer, length));
-        if (str == null)
-        {
-            throw new MagicException(LastError);
-        }
-
-        return str;
+        return Marshal.PtrToStringAnsi(MagicNative.magic_buffer(_magic, buffer, length))
+            ?? throw new MagicException(LastError);
     }
 
     /// <summary>
@@ -271,7 +268,13 @@ public sealed class Magic : IDisposable
         }
     }
 
-    private void DoDispose() => MagicNative.magic_close(_magic);
+    private void DoDispose()
+    {
+        if (_magic != IntPtr.Zero)
+        {
+            MagicNative.magic_close(_magic);
+        }
+    }
 
     /// <summary>
     /// <inheritdoc/>
