@@ -23,7 +23,7 @@ public class MagicExceptionTests
     }
 
     [Fact]
-    public void Constructor_WithMessageAndAdditionalInfo_PrefersMessage()
+    public void Constructor_WithMessageAndFallback_UsesMessage()
     {
         // Arrange & Act
         var ex = new MagicException("primary error", "fallback info");
@@ -33,7 +33,7 @@ public class MagicExceptionTests
     }
 
     [Fact]
-    public void Constructor_WithNullMessageAndAdditionalInfo_UsesFallback()
+    public void Constructor_WithNullMessageAndFallback_UsesFallback()
     {
         // Arrange & Act
         var ex = new MagicException(null!, "fallback info");

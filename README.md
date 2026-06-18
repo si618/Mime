@@ -76,16 +76,17 @@ git clone https://github.com/si618/Mime.git
 cd Mime
 dotnet build
 dotnet test --no-build
+dotnet run --project samples/MimeExample/MimeExample.csproj
 dotnet pack -c Release -o nupkg
 ```
 
 ## Possible problems
 
-| Exception                                              | Solution                                                                                                                                                                                                                         |
-| :----------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| DllNotFoundException                                   | Make sure that your `bin` folder contains runtimes directory. If you publishing platform dependent app, then `bin` should be contains `libmagic-1`(.dll, .so or .dylib) and `magic.mgc` files.                                   |
-| BadImageFormatException                                | Try targeting `x64` or `arm64` instead of `AnyCPU`.                                                                                                                                                                             |
-| MagicException: Could not find any valid magic files!  | Make sure your magic.mgc file contains in one of /runtimes/ subdirs or along with libmagic-1.[dll\|lib\|dylib]. Or set path to custom database as described in [basic usage](#basic-usage).       |
+| Exception                                             | Solution                                                                                                                                                                                       |
+| :---------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DllNotFoundException                                  | Make sure your `bin` folder contains the runtimes directory. If publishing a platform-dependent app, `bin` should contain `libmagic-1` (.dll, .so, or .dylib) and `magic.mgc`.                |
+| BadImageFormatException                               | Try targeting `x64` or `arm64` instead of `AnyCPU`.                                                                                                                                           |
+| MagicException: Could not find any valid magic files! | Make sure `magic.mgc` is in one of the `/runtimes/` subdirs or alongside `libmagic-1.[dll\|lib\|dylib]`. Or set a custom path as described in [basic usage](#basic-usage).                    |
 
 ## License
 

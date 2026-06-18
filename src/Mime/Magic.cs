@@ -22,9 +22,7 @@ public sealed class Magic : IDisposable
         get
         {
             var err = Marshal.PtrToStringAnsi(MagicNative.MagicError(_magic));
-            return err != null ?
-                char.ToUpper(err[0]) + err[1..] :
-                string.Empty;
+            return err is { Length: > 0 } ? char.ToUpper(err[0]) + err[1..] : string.Empty;
         }
     }
 
@@ -89,7 +87,7 @@ public sealed class Magic : IDisposable
         ArgumentNullException.ThrowIfNull(buffer);
         ArgumentOutOfRangeException.ThrowIfNegative(bufferSize);
 
-        var length = buffer.Length < bufferSize ? buffer.Length : bufferSize;
+        var length = Math.Min(buffer.Length, bufferSize);
 
         return Marshal.PtrToStringAnsi(MagicNative.MagicBuffer(_magic, buffer, length))
             ?? throw new MagicException(LastError);
@@ -121,7 +119,10 @@ public sealed class Magic : IDisposable
                 totalRead += read;
             }
 
-            if (stream.CanSeek) stream.Position = 0;
+            if (stream.CanSeek)
+            {
+                stream.Position = 0;
+            }
 
             return Read(rented, totalRead);
         }
@@ -245,7 +246,7 @@ public sealed class Magic : IDisposable
 
     #region IDisposable support
 
-    private bool _disposed = false;
+    private bool _disposed;
 
     private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -267,7 +268,10 @@ public sealed class Magic : IDisposable
     /// </summary>
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
 
         DoDispose();
 
