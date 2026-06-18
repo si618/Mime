@@ -20,6 +20,7 @@
     <AssemblyName>Mime</AssemblyName>
     <RootNamespace>HeyRed.Mime</RootNamespace>
     <Configurations>Debug;Release</Configurations>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Platforms>AnyCPU;ARM64;x64;x86</Platforms>
   </PropertyGroup>
 

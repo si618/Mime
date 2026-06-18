@@ -1,27 +1,19 @@
-﻿using System.Reflection;
-
-namespace HeyRed.Mime;
+﻿namespace HeyRed.Mime;
 
 internal static class MagicUtils
 {
     private const string MAGIC_DB_NAME = "magic.mgc";
 
-    private static string GetCurrentRid()
-    {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            return "win";
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            return "linux";
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            return "osx";
-
+    private static string GetCurrentRid() =>
+        RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "win" :
+        RuntimeInformation.IsOSPlatform(OSPlatform.Linux)   ? "linux" :
+        RuntimeInformation.IsOSPlatform(OSPlatform.OSX)     ? "osx" :
         throw new PlatformNotSupportedException();
-    }
 
     public static string? GetDefaultMagicPath()
     {
-        string assemblyLocation = typeof(MagicUtils).GetTypeInfo().Assembly.Location;
-        string currentPath = assemblyLocation.Replace("Mime.dll", "");
+        string assemblyLocation = typeof(MagicUtils).Assembly.Location;
+        string currentPath = Path.GetDirectoryName(assemblyLocation) ?? "";
 
         string magicDbPath = Path.Combine(currentPath, MAGIC_DB_NAME);
 
@@ -31,7 +23,7 @@ internal static class MagicUtils
             return magicDbPath;
         }
 
-        var architecture = RuntimeInformation.ProcessArchitecture.ToString().ToLower();
+        var architecture = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
 
         magicDbPath = Path.Combine(currentPath, $"runtimes/{GetCurrentRid()}-{architecture}/native/", MAGIC_DB_NAME);
 

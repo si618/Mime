@@ -24,8 +24,8 @@ public class MagicException : Exception
     /// <inheritdoc/>
     /// </summary>
     /// <param name="message"></param>
-    /// <param name="additionalInfo"></param>
-    public MagicException(string message, string additionalInfo) : base(message ?? additionalInfo)
+    /// <param name="fallbackMessage"></param>
+    public MagicException(string message, string fallbackMessage) : base(message ?? fallbackMessage)
     {
     }
 

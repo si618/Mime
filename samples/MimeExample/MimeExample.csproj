@@ -1,37 +1,32 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
-    <IsPackable>false</IsPackable>
-    <Configurations>Debug;Release</Configurations>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <Platforms>AnyCPU;ARM64;x86</Platforms>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Using Include="System" />
-    <Using Include="System.IO" />
-    <Using Include="HeyRed.Mime" />
-    <Using Include="Xunit" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.6.0" />
-    <PackageReference Include="xunit" Version="2.9.3" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Mime\Mime.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Using Include="HeyRed.Mime" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\test\MimeTests\TestData\test.jpeg" CopyToOutputDirectory="PreserveNewest" Link="test.jpeg" />
+  </ItemGroup>
+
+  <!-- NativeLib copy targets below are required when referencing Mime via a project reference rather
+       than a NuGet package. NuGet handles native library extraction automatically; a project reference
+       does not, so libmagic-1 and magic.mgc must be copied to the output directory explicitly. -->
   <ImportGroup>
     <Import Project="..\..\src\Mime\Mime.props" />
   </ImportGroup>
-  
+
   <!-- Windows -->
   <ItemGroup Condition=" '$(IsX64)' == 'true' AND '$(IsWindows)' == 'true' ">
     <NativeLib Include="../../src/Mime/runtimes/win-x64/native/*" />
@@ -51,12 +46,10 @@
     <NativeLib Include="../../src/Mime/runtimes/linux-arm64/native/*" />
   </ItemGroup>
 
-  <!-- OSX arm64 -->
+  <!-- macOS -->
   <ItemGroup Condition=" '$(IsARM64)' == 'true' AND '$(IsOSX)' == 'true' ">
     <NativeLib Include="../../src/Mime/runtimes/osx-arm64/native/*" />
   </ItemGroup>
-  
-  <!-- OSX x64 -->
   <ItemGroup Condition=" '$(IsX64)' == 'true' AND '$(IsOSX)' == 'true' ">
     <NativeLib Include="../../src/Mime/runtimes/osx-x64/native/*" />
   </ItemGroup>
@@ -64,20 +57,6 @@
   <Target Name="CopyNativeLib" AfterTargets="Build">
     <Copy SourceFiles="@(NativeLib)" DestinationFolder="$(OutputPath)" />
     <Copy SourceFiles="../../src/Mime/content/magic.mgc" DestinationFolder="$(OutputPath)" />
-  </Target>
-
-  <ItemGroup>
-    <None Include="TestData/**/*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
-  <Target Name="PrintRID" BeforeTargets="Build">
-    <Message Text="IsWindows $(IsWindows)" Importance="high" />
-    <Message Text="IsOSX $(IsOSX)" Importance="high" />
-    <Message Text="IsLinux $(IsLinux)" Importance="high" />
-    <Message Text="IsArm64 $(IsARM64)" Importance="high" />
-    <Message Text="IsX64 $(IsX64)" Importance="high" />
   </Target>
 
 </Project>
