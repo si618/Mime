@@ -1,20 +1,24 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>.NET wrapper for libmagic.</Description>
+    <Description>.NET wrapper for libmagic, bundling native libmagic binaries for Windows, Linux and macOS. Fork of hey-red/Mime.</Description>
     <AssemblyTitle>Mime</AssemblyTitle>
     <Version>4.0.0</Version>
-    <Authors>red</Authors>
+    <Authors>red;si618</Authors>
     <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <PackageId>Mime</PackageId>
+    <PackageId>MimeMagic</PackageId>
     <PackageTags>mime;mimetype;libmagic</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageProjectUrl>https://github.com/hey-red/Mime</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/si618/Mime</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/si618/Mime</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AssemblyName>Mime</AssemblyName>
@@ -64,8 +68,8 @@
     <EmbeddedResource Remove="Properties\**" />
     <None Remove="Properties\**" />
     
-    <None Include="Mime.targets" PackagePath="build" Pack="true" />
-    <None Include="Mime.props" PackagePath="build" Pack="true" />
+    <!-- NuGet only auto-imports build assets named after the PackageId -->
+    <None Include="Mime.props" PackagePath="build/MimeMagic.props" Pack="true" />
   </ItemGroup>
 
 </Project>
