@@ -1,36 +1,57 @@
-# This workflow produces a NuGet package (.nupkg) as a build artifact on every
-# push to master. It does NOT publish to nuget.org.
+# Publishes the MimeMagic package to nuget.org when a v* tag is pushed
+# (e.g. v4.0.0 publishes version 4.0.0).
 #
-# Why: This is a fork of hey-red/Mime. The upstream project already publishes
-# the official package to nuget.org. We maintain this fork to carry custom
-# native binary updates (libmagic rebuilds via build-libmagic.yml) ahead of
-# upstream releases. Publishing a competing package to nuget.org from a fork
-# would conflict with the upstream package, so we distribute via GitHub
-# Actions artifacts instead — downloadable directly from the workflow run.
+# Authentication uses nuget.org Trusted Publishing: NuGet/login exchanges the
+# GitHub OIDC token for a short-lived API key, so no long-lived key is stored.
+# Requires a Trusted Publishing policy on nuget.org for this repository and
+# workflow file, and a NUGET_USER repository secret holding the nuget.org
+# account name.
 name: Pack
 
 on:
   push:
-    branches:
-      - master
+    tags:
+      - 'v*'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   pack:
-    name: Pack NuGet
+    name: Pack & Publish NuGet
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Test
+        run: dotnet test test/MimeTests/MimeTests.csproj -c Release
 
       - name: Pack
-        run: dotnet pack src/Mime/Mime.csproj -c Release -o nupkg
+        run: dotnet pack src/Mime/Mime.csproj -c Release -o nupkg -p:Version=${GITHUB_REF_NAME#v} -p:ContinuousIntegrationBuild=true
 
       - name: Upload NuGet package
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: nupkg
-          path: nupkg/*.nupkg
+          path: |
+            nupkg/*.nupkg
+            nupkg/*.snupkg
           retention-days: 90
+
+      - name: NuGet login
+        id: login
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Publish to nuget.org
+        run: dotnet nuget push "nupkg/*.nupkg" --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate

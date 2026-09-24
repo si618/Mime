@@ -2,19 +2,22 @@
 
 .NET wrapper for libmagic
 
-<!-- TODO: update badges — NuGet points to upstream, license link points to hey-red/Markdown -->
-<!-- [![NuGet](https://img.shields.io/nuget/v/Mime.svg)](https://www.nuget.org/packages/Mime) -->
-<!-- [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/hey-red/Markdown/blob/master/LICENSE) -->
+[![NuGet](https://img.shields.io/nuget/v/MimeMagic.svg)](https://www.nuget.org/packages/MimeMagic)
+[![license](https://img.shields.io/github/license/si618/Mime.svg)](LICENSE)
 
 ## Install
 
-The [NuGet package on nuget.org](https://www.nuget.org/packages/Mime) is published by the upstream [hey-red/Mime](https://github.com/hey-red/Mime) repository.
+```sh
+dotnet add package MimeMagic
+```
 
-This fork does not currently publish a package outside of the repository — build artifacts are available as downloads from GitHub Actions workflow runs.
+[MimeMagic](https://www.nuget.org/packages/MimeMagic) is published to nuget.org from this repository, a fork of [hey-red/Mime](https://github.com/hey-red/Mime) that keeps the bundled libmagic native binaries up to date.
+
+Only the package name differs from upstream. The assembly is still `Mime` and the namespace is still `HeyRed.Mime`, so switching from the `Mime` package to `MimeMagic` needs no code changes. Don't reference both packages in the same project, because their assemblies and native assets conflict.
 
 ## Requirements
 
-Only current LTS versions of .NET are supported (net8.0 and net10.0).
+Supported .NET versions are the current LTS releases (net8.0 and net10.0), plus the latest STS release when it is newer than the latest LTS. Versions are dropped once they reach end of support.
 
 Supported runtimes:
 
@@ -80,13 +83,44 @@ dotnet run --project samples/MimeExample/MimeExample.csproj
 dotnet pack -c Release -o nupkg
 ```
 
+## Releasing
+
+MimeMagic is published to nuget.org by the [Pack workflow](.github/workflows/pack.yml), which runs only when a `v*` tag is pushed. Pushes and pull requests to `master` only build and test (see [CI](.github/workflows/ci.yml)).
+
+### Publishing a release
+
+1. Make sure `master` is green in CI and contains everything intended for the release.
+2. Pick the version following [SemVer](https://semver.org/). The package version comes from the tag, not from `<Version>` in `src/Mime/Mime.csproj`, which is only the default for local builds. Keep it in step with the tag anyway.
+3. Tag the `master` commit and push the tag:
+
+   ```sh
+   git switch master
+   git pull
+   git tag -a v4.0.0 -m "MimeMagic 4.0.0"
+   git push origin v4.0.0
+   ```
+
+   A pre-release tag such as `v4.1.0-beta.1` publishes a pre-release package.
+
+4. Watch the Pack run under the repository's Actions tab. It runs the tests on net8.0 and net10.0, packs with the version taken from the tag (`v4.0.0` becomes `4.0.0`), and pushes the `.nupkg` and `.snupkg` to nuget.org. The packages are also attached to the run as an artifact.
+5. The new version appears on the [MimeMagic package page](https://www.nuget.org/packages/MimeMagic) after nuget.org finishes validating and indexing it, which usually takes a few minutes.
+
+Versions on nuget.org are immutable, so a published version can't be replaced. To fix a bad release, unlist it on nuget.org and tag a new version. Re-pushing an existing version is skipped (`--skip-duplicate`).
+
+### Publishing setup
+
+Publishing uses [nuget.org Trusted Publishing](https://learn.microsoft.com/nuget/nuget-org/trusted-publishing). The workflow exchanges its GitHub OIDC token for a short-lived API key, so no long-lived key is stored. This is already configured, and only needs redoing if the repository, the workflow file name or the nuget.org owner changes:
+
+- **nuget.org Trusted Publishing policy:** owner `si-fi`, repository owner `si618`, repository `Mime`, workflow file `pack.yml`, no environment, scoped to the package `MimeMagic`.
+- **GitHub repository secret `NUGET_USER`:** the nuget.org username (`si-fi`). This must be a repository secret, not an environment secret, because the Pack job doesn't declare a GitHub environment.
+
 ## Possible problems
 
-| Exception                                             | Solution                                                                                                                                                                                       |
-| :---------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| DllNotFoundException                                  | Make sure your `bin` folder contains the runtimes directory. If publishing a platform-dependent app, `bin` should contain `libmagic-1` (.dll, .so, or .dylib) and `magic.mgc`.                |
-| BadImageFormatException                               | Try targeting `x64` or `arm64` instead of `AnyCPU`.                                                                                                                                           |
-| MagicException: Could not find any valid magic files! | Make sure `magic.mgc` is in one of the `/runtimes/` subdirs or alongside `libmagic-1.[dll\|lib\|dylib]`. Or set a custom path as described in [basic usage](#basic-usage).                    |
+| Exception                                             | Solution                                                                                                                                                                       |
+| :---------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DllNotFoundException                                  | Make sure your `bin` folder contains the runtimes directory. If publishing a platform-dependent app, `bin` should contain `libmagic-1` (.dll, .so, or .dylib) and `magic.mgc`. |
+| BadImageFormatException                               | Try targeting `x64` or `arm64` instead of `AnyCPU`.                                                                                                                            |
+| MagicException: Could not find any valid magic files! | Make sure `magic.mgc` is in one of the `/runtimes/` subdirs or alongside `libmagic-1.[dll\|lib\|dylib]`. Or set a custom path as described in [basic usage](#basic-usage).     |
 
 ## License
 
