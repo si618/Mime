@@ -21,7 +21,7 @@ public class MagicException : Exception
     }
 
     /// <summary>
-    /// <inheritdoc/>
+    /// Initializes a new instance with <paramref name="message"/>, or <paramref name="fallbackMessage"/> when libmagic reports no error text.
     /// </summary>
     /// <param name="message"></param>
     /// <param name="fallbackMessage"></param>
