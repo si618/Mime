@@ -1,4 +1,5 @@
-using System.Buffers;
+﻿using System.Buffers;
+using System.Globalization;
 
 namespace HeyRed.Mime;
 
@@ -7,7 +8,11 @@ namespace HeyRed.Mime;
 /// </summary>
 public sealed class Magic : IDisposable
 {
+#if NET9_0_OR_GREATER
+    private static readonly Lock _magicLock = new();
+#else
     private static readonly object _magicLock = new();
+#endif
 
     private readonly IntPtr _magic;
 
@@ -22,7 +27,7 @@ public sealed class Magic : IDisposable
         get
         {
             var err = Marshal.PtrToStringAnsi(MagicNative.MagicError(_magic));
-            return err is { Length: > 0 } ? char.ToUpper(err[0]) + err[1..] : string.Empty;
+            return err is { Length: > 0 } ? char.ToUpper(err[0], CultureInfo.InvariantCulture) + err[1..] : string.Empty;
         }
     }
 
@@ -62,7 +67,7 @@ public sealed class Magic : IDisposable
     {
         ThrowIfDisposed();
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && HasNonAsciiChars(filePath))
+        if (OperatingSystem.IsWindows() && HasNonAsciiChars(filePath))
         {
             byte[] buffer = File.ReadAllBytes(filePath);
             return Read(buffer, buffer.Length);
@@ -259,9 +264,11 @@ public sealed class Magic : IDisposable
     }
 
     /// <summary>
-    /// <inheritdoc/>
+    /// Closes the libmagic cookie if <see cref="Dispose"/> was not called.
     /// </summary>
+#pragma warning disable MA0055 // Magic owns a raw native cookie (IntPtr, not a SafeHandle), so the finalizer is its only release path when Dispose is skipped
     ~Magic() => DoDispose();
+#pragma warning restore MA0055
 
     /// <summary>
     /// Cleanups all unmanaged resources.

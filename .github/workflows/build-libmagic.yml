@@ -557,7 +557,7 @@ jobs:
           cp artifacts/magic-db/Magdir.mgc src/Mime/content/magic.mgc
           cp artifacts/linux-x64/libmagic-1.so src/Mime/runtimes/linux-x64/native/libmagic-1.so
       - name: Run tests
-        run: dotnet test --logger "console;verbosity=normal"
+        run: dotnet test --output Detailed
 
   test-linux-arm64:
     name: Test linux-arm64
@@ -589,9 +589,9 @@ jobs:
       - name: Build and verify native lib
         run: |
           dotnet build test/MimeTests/MimeTests.csproj -p:Platform=ARM64
-          file test/MimeTests/bin/Debug/net10.0/libmagic-1.so
+          file artifacts/bin/MimeTests/debug_net10.0/libmagic-1.so
       - name: Run tests
-        run: dotnet test test/MimeTests/MimeTests.csproj --no-build -p:Platform=ARM64 --logger "console;verbosity=normal"
+        run: dotnet test test/MimeTests/MimeTests.csproj --no-build -p:Platform=ARM64 --output Detailed
 
   test-linux-musl-x64:
     name: Test linux-musl-x64
@@ -623,7 +623,7 @@ jobs:
             -v "${{ github.workspace }}:/workspace" \
             -w /workspace \
             mcr.microsoft.com/dotnet/sdk:10.0-alpine \
-            dotnet test --logger "console;verbosity=normal"
+            dotnet test --output Detailed
 
   test-linux-musl-arm64:
     name: Test linux-musl-arm64
@@ -659,7 +659,7 @@ jobs:
             -v "${{ github.workspace }}:/workspace" \
             -w /workspace \
             mcr.microsoft.com/dotnet/sdk:10.0-alpine \
-            dotnet test test/MimeTests/MimeTests.csproj -p:Platform=ARM64 --logger "console;verbosity=normal"
+            dotnet test test/MimeTests/MimeTests.csproj -p:Platform=ARM64 --output Detailed
 
   test-osx-x64:
     name: Test osx-x64
@@ -692,9 +692,9 @@ jobs:
       - name: Build and verify native lib
         run: |
           dotnet build test/MimeTests/MimeTests.csproj -p:Platform=x64
-          file test/MimeTests/bin/Debug/net10.0/libmagic-1.dylib
+          file artifacts/bin/MimeTests/debug_net10.0/libmagic-1.dylib
       - name: Run tests
-        run: dotnet test test/MimeTests/MimeTests.csproj --no-build -p:Platform=x64 --logger "console;verbosity=normal"
+        run: dotnet test test/MimeTests/MimeTests.csproj --no-build -p:Platform=x64 --output Detailed
 
   test-osx-arm64:
     name: Test osx-arm64
@@ -726,9 +726,9 @@ jobs:
       - name: Build and verify native lib
         run: |
           dotnet build test/MimeTests/MimeTests.csproj -p:Platform=ARM64
-          file test/MimeTests/bin/Debug/net10.0/libmagic-1.dylib
+          file artifacts/bin/MimeTests/debug_net10.0/libmagic-1.dylib
       - name: Run tests
-        run: dotnet test test/MimeTests/MimeTests.csproj --no-build -p:Platform=ARM64 --logger "console;verbosity=normal"
+        run: dotnet test test/MimeTests/MimeTests.csproj --no-build -p:Platform=ARM64 --output Detailed
 
   test-win-x64:
     name: Test win-x64
@@ -758,7 +758,7 @@ jobs:
           Copy-Item artifacts/magic-db/Magdir.mgc src/Mime/content/magic.mgc
           Copy-Item artifacts/win-x64/* src/Mime/runtimes/win-x64/native/ -Force
       - name: Run tests
-        run: dotnet test --logger "console;verbosity=normal"
+        run: dotnet test --output Detailed
 
   test-win-x86:
     name: Test win-x86
@@ -795,8 +795,8 @@ jobs:
         run: |
           Get-ChildItem src/Mime/runtimes/win-x86/native/
           dotnet build test/MimeTests -p:Platform=x86
-          Get-ChildItem test/MimeTests/bin/x86/Debug/net10.0/ -Filter "lib*"
-          dotnet test test/MimeTests --no-build -p:Platform=x86 --logger "console;verbosity=normal"
+          Get-ChildItem artifacts/bin/MimeTests/debug_net10.0/ -Filter "lib*"
+          dotnet test test/MimeTests --no-build -p:Platform=x86 --output Detailed
         env:
           DOTNET_ROOT_X86: C:\Program Files\dotnet\x86
 

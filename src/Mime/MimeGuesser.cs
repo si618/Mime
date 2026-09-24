@@ -8,12 +8,12 @@ public static class MimeGuesser
     /// <summary>
     /// Path to libmagic database file.
     /// </summary>
-    public static string? MagicFilePath { get; set; } = null;
+    public static string? MagicFilePath { get; set; }
 
     /// <summary>
     /// Libmagic open flags for getting file type
     /// </summary>
-    private static readonly MagicOpenFlags MagicMimeFlags =
+    private static readonly MagicOpenFlags _magicMimeFlags =
         MagicOpenFlags.MAGIC_ERROR |
         MagicOpenFlags.MAGIC_MIME_TYPE |
         MagicOpenFlags.MAGIC_NO_CHECK_COMPRESS |
@@ -29,12 +29,9 @@ public static class MimeGuesser
     /// <returns>Mime type as string</returns>
     public static string GuessMimeType(string filePath)
     {
-        if (filePath == null)
-        {
-            throw new ArgumentNullException(nameof(filePath));
-        }
+        ArgumentNullException.ThrowIfNull(filePath);
 
-        using var magic = new Magic(MagicMimeFlags, MagicFilePath);
+        using var magic = new Magic(_magicMimeFlags, MagicFilePath);
         return magic.Read(filePath);
     }
 
@@ -45,12 +42,9 @@ public static class MimeGuesser
     /// <returns>Mime type as string</returns>
     public static string GuessMimeType(byte[] buffer)
     {
-        if (buffer == null)
-        {
-            throw new ArgumentNullException(nameof(buffer));
-        }
+        ArgumentNullException.ThrowIfNull(buffer);
 
-        using var magic = new Magic(MagicMimeFlags, MagicFilePath);
+        using var magic = new Magic(_magicMimeFlags, MagicFilePath);
         return magic.Read(buffer, buffer.Length);
     }
 
@@ -61,12 +55,9 @@ public static class MimeGuesser
     /// <returns>Mime type as string</returns>
     public static string GuessMimeType(Stream stream)
     {
-        if (stream == null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
+        ArgumentNullException.ThrowIfNull(stream);
 
-        using var magic = new Magic(MagicMimeFlags, MagicFilePath);
+        using var magic = new Magic(_magicMimeFlags, MagicFilePath);
         return magic.Read(stream, 1048576);
     }
 

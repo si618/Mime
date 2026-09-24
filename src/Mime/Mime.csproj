@@ -1,13 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <Description>.NET wrapper for libmagic, bundling native libmagic binaries for Windows, Linux and macOS. Fork of hey-red/Mime.</Description>
     <AssemblyTitle>Mime</AssemblyTitle>
     <Version>4.0.0</Version>
     <Authors>red;si618</Authors>
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
-    <LangVersion>latest</LangVersion>
-    <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PackageId>MimeMagic</PackageId>
     <PackageTags>mime;mimetype;libmagic</PackageTags>
@@ -20,23 +17,19 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AssemblyName>Mime</AssemblyName>
     <RootNamespace>HeyRed.Mime</RootNamespace>
-    <Configurations>Debug;Release</Configurations>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Platforms>AnyCPU;ARM64;x64;x86</Platforms>
+    <EnablePackageValidation>true</EnablePackageValidation>
   </PropertyGroup>
 
   <ItemGroup>
-    <Using Include="System" />
-    <Using Include="System.IO" />
     <Using Include="System.Runtime.InteropServices" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.401" PrivateAssets="All" />
-    <PackageReference Include="MimeTypesMap" Version="1.0.9" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
+    <PackageReference Include="MimeTypesMap" />
   </ItemGroup>
     
   <ItemGroup>

@@ -6,6 +6,9 @@ on:
       - master
   pull_request:
 
+permissions:
+  contents: read
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -22,17 +25,30 @@ jobs:
           - os: macos-latest
             platform: ARM64
 
+    env:
+      PLATFORM_ARG: ${{ matrix.platform && format('-p:Platform={0}', matrix.platform) || '' }}
+
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
+      # global.json selects the SDK; the 8.0 runtime is still needed to run the net8.0 tests.
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
-          dotnet-version: |
-            8.0.x
-            10.0.x
+          global-json-file: global.json
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore Mime.slnx
 
       - name: Build
-        run: dotnet build Mime.slnx -c Release
+        run: dotnet build Mime.slnx --no-restore -c Release -warnaserror ${{ env.PLATFORM_ARG }}
 
       - name: Test
-        run: dotnet test test/MimeTests/MimeTests.csproj -c Release --logger "console;verbosity=normal" ${{ matrix.platform && format('-p:Platform={0}', matrix.platform) || '--no-build' }}
+        run: dotnet test test/MimeTests/MimeTests.csproj --no-build -c Release ${{ env.PLATFORM_ARG }} --output Detailed --report-xunit-trx --results-directory artifacts/test-results
+
+      - name: Upload test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: test-results-${{ matrix.os }}
+          path: artifacts/test-results/*.trx

@@ -1,4 +1,8 @@
-﻿namespace HeyRed.Mime;
+﻿// Member names and values mirror the libmagic C constants (LIBMAGIC(3)) one for one, and renaming
+// them would break the public API. That includes aliases sharing a value and the "Flags" suffix.
+#pragma warning disable CA1707, CA1711, CA1069
+
+namespace HeyRed.Mime;
 
 /// <summary>
 /// Contains libmagic options flags.
@@ -75,7 +79,7 @@ public enum MagicOpenFlags
     /// <summary>
     /// A shorthand for MAGIC_MIME_TYPE | MAGIC_MIME_ENCODING.
     /// </summary>
-    MAGIC_MIME = (MAGIC_MIME_TYPE | MAGIC_MIME_ENCODING),
+    MAGIC_MIME = MAGIC_MIME_TYPE | MAGIC_MIME_ENCODING,
 
     /// <summary>
     /// Return the Apple creator and type.
@@ -95,7 +99,7 @@ public enum MagicOpenFlags
     /// <summary>
     /// A shorthand for (MAGIC_EXTENSION|MAGIC_MIME|MAGIC_APPLE).
     /// </summary>
-    MAGIC_NODESC = (MAGIC_EXTENSION | MAGIC_MIME | MAGIC_APPLE),
+    MAGIC_NODESC = MAGIC_EXTENSION | MAGIC_MIME | MAGIC_APPLE,
 
     /// <summary>
     /// Don't look inside compressed files.

@@ -1,0 +1,43 @@
+<!-- Based on dotnet-awesome-humans templates/Directory.Build.props. Every project inherits these;
+     override per-project only with a recorded reason. -->
+<Project>
+
+  <PropertyGroup Label="Output layout">
+    <!-- One artifacts/<type>/<project>/<pivot> root for all build output. Must be set here or on the
+         command line: MSBuild reads it before project evaluation, so a .csproj setting fails with NETSDK1199. -->
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Targets and language">
+    <!-- Every supported LTS, plus the latest STS when newer (see README "Requirements"). -->
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <WarningsAsErrors>nullable</WarningsAsErrors>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Quality gates">
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Packaging hygiene">
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Doc file feeds IDE tooltips; CS1591 exempted so undocumented internals and tests don't fail the build -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup Label="Analyzers">
+    <PackageReference Include="Meziantou.Analyzer" PrivateAssets="all" />
+  </ItemGroup>
+
+  <PropertyGroup Label="Deterministic builds">
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+</Project>

@@ -1,12 +1,14 @@
 ﻿namespace MimeTests;
 
-public class GuessMime : IDisposable
+public sealed class GuessMime : IDisposable
 {
     private readonly string _unicodeTempDir;
 
     public GuessMime()
     {
-        _unicodeTempDir = Path.Combine(Path.GetTempPath(), "MimeTests_إظهار_テスト");
+        // Unique per instance: each target framework's test process runs concurrently under MTP,
+        // and a shared directory would be deleted by one process's Dispose while the other uses it.
+        _unicodeTempDir = Path.Combine(Path.GetTempPath(), $"MimeTests_إظهار_テスト_{Guid.NewGuid():N}");
         Directory.CreateDirectory(_unicodeTempDir);
     }
 
