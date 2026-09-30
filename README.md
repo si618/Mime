@@ -17,7 +17,7 @@ Only the package name differs from hey-red/Mime. The assembly is still `Mime` an
 
 ## Requirements
 
-Supported .NET versions are the current LTS releases (net8.0 and net10.0), plus the latest STS release when it is newer than the latest LTS. Versions are dropped once they reach end of support.
+Supported .NET versions are the current LTS releases (net8.0 and net10.0), plus the latest STS release when the library uses an API the STS adds. LTS targets are dropped once they reach end of support. An STS target is replaced by the next LTS once that ships, even though the STS is still supported.
 
 Supported runtimes:
 
