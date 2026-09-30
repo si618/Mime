@@ -14,6 +14,9 @@ on:
   schedule:
     - cron: '0 6 * * 1'
 
+permissions:
+  contents: read
+
 env:
   FILE_REPO: https://github.com/file/file.git
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -24,6 +27,9 @@ jobs:
   resolve-version:
     name: Resolve file version
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # the scheduled run skips versions that already have a PR
     outputs:
       file_version: ${{ steps.resolve.outputs.file_version }}
       should_run: ${{ steps.resolve.outputs.should_run }}
