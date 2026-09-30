@@ -11,7 +11,7 @@
 dotnet add package MimeMagic
 ```
 
-[MimeMagic](https://www.nuget.org/packages/MimeMagic) is published to nuget.org from this repository, a fork of [hey-red/Mime](https://github.com/hey-red/Mime) needed to keep the bundled libmagic native binaries and .NET runtimes and packages updated.
+[MimeMagic](https://www.nuget.org/packages/MimeMagic) is published to nuget.org from this repository, a fork of [hey-red/Mime](https://github.com/hey-red/Mime) needed to keep the bundled libmagic native binaries, .NET runtimes and packages updated.
 
 Only the package name differs from hey-red/Mime. The assembly is still `Mime` and the namespace is still `HeyRed.Mime`, so switching from the `Mime` package to `MimeMagic` requires no code changes. Don't reference both packages in the same project, because their assemblies and native assets conflict.
 
