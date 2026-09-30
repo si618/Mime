@@ -52,51 +52,71 @@ public sealed class GuessMime : IDisposable
     }
 
     [Fact]
-    public void GuessMimeFromFilePath()
+    public void GuessMimeFromFilePath_JpegFile_ReturnsMimeType()
     {
+        // Arrange
         var expected = "image/jpeg";
+
+        // Act
         string actual = MimeGuesser.GuessMimeType(ResourceUtils.GetJpegFileFixture);
 
+        // Assert
         Assert.Equal(expected, actual);
     }
 
     [Fact]
-    public void GuessMimeFromBuffer()
+    public void GuessMimeFromBuffer_JpegBytes_ReturnsMimeType()
     {
+        // Arrange
         byte[] buffer = File.ReadAllBytes(ResourceUtils.GetJpegFileFixture);
         var expected = "image/jpeg";
+
+        // Act
         string actual = MimeGuesser.GuessMimeType(buffer);
 
+        // Assert
         Assert.Equal(expected, actual);
     }
 
     [Fact]
-    public void GuessMimeFromStream()
+    public void GuessMimeFromStream_JpegStream_ReturnsMimeType()
     {
+        // Arrange
         using var stream = File.OpenRead(ResourceUtils.GetJpegFileFixture);
         var expected = "image/jpeg";
+
+        // Act
         string actual = MimeGuesser.GuessMimeType(stream);
 
+        // Assert
         Assert.Equal(expected, actual);
     }
 
     [Fact]
-    public void GuessMimeFromSmallTextStream()
+    public void GuessMimeFromStream_SmallTextStream_ReturnsTextPlain()
     {
+        // Arrange
         using var stream = File.OpenRead(ResourceUtils.GetTextFileFixture);
         var expected = "text/plain";
+
+        // Act
         string actual = MimeGuesser.GuessMimeType(stream);
 
+        // Assert
         Assert.Equal(expected, actual);
     }
 
     [Fact]
-    public void GuessMimeFromFileInfo()
+    public void GuessMimeFromFileInfo_JpegFile_ReturnsMimeType()
     {
+        // Arrange
         var expected = "image/jpeg";
         var fi = new FileInfo(ResourceUtils.GetJpegFileFixture);
+
+        // Act
         string actual = fi.GuessMimeType();
 
+        // Assert
         Assert.Equal(expected, actual);
     }
 
