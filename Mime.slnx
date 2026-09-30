@@ -6,13 +6,23 @@
     <Platform Name="x86" />
   </Configurations>
   <Folder Name="/samples/">
-    <Project Path="samples/MimeExample/MimeExample.csproj" />
+    <Project Path="samples/MimeExample/MimeExample.csproj">
+      <!-- Native libmagic is chosen from $(Platform) (src/Mime/Mime.props), so the solution platform
+           must reach these projects rather than collapsing to Any CPU. -->
+      <Platform Solution="*|ARM64" Project="ARM64" />
+      <Platform Solution="*|x86" Project="x86" />
+    </Project>
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Mime/Mime.csproj" />
   </Folder>
   <Folder Name="/test/">
-    <Project Path="test/MimeTests/MimeTests.csproj" />
+    <Project Path="test/MimeTests/MimeTests.csproj">
+      <!-- Native libmagic is chosen from $(Platform) (src/Mime/Mime.props), so the solution platform
+           must reach these projects rather than collapsing to Any CPU. -->
+      <Platform Solution="*|ARM64" Project="ARM64" />
+      <Platform Solution="*|x86" Project="x86" />
+    </Project>
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
