@@ -1,6 +1,6 @@
 # Mime
 
-.NET wrapper for libmagic
+.NET wrapper for [libmagic](https://man7.org/linux/man-pages/man3/libmagic.3.html)
 
 [![NuGet](https://img.shields.io/nuget/v/MimeMagic.svg)](https://www.nuget.org/packages/MimeMagic)
 [![license](https://img.shields.io/github/license/si618/Mime.svg)](LICENSE)
@@ -11,9 +11,16 @@
 dotnet add package MimeMagic
 ```
 
-[MimeMagic](https://www.nuget.org/packages/MimeMagic) is published to nuget.org from this repository, a fork of [hey-red/Mime](https://github.com/hey-red/Mime) needed to keep the bundled libmagic native binaries, .NET runtimes and packages updated.
+[MimeMagic](https://www.nuget.org/packages/MimeMagic) is published to nuget.org from this repository, a fork of [hey-red/Mime](https://github.com/hey-red/Mime).
 
-Only the package name differs from hey-red/Mime. The assembly is still `Mime` and the namespace is still `HeyRed.Mime`, so switching from the `Mime` package to `MimeMagic` requires no code changes. Don't reference both packages in the same project, because their assemblies and native assets conflict.
+Only the NuGet package name differs from hey-red/Mime. No code changes should be needed to switch from the `Mime` package to `MimeMagic`, as the assembly name remains `Mime` and the namespace is still `HeyRed.Mime`. Avoid referencing both packages in the same project; their assemblies and native assets will conflict.
+
+## Why fork?
+
+- Keeps the bundled libmagic native binaries, .NET runtimes and referenced packages up to date
+- Detects large files correctly ([hey-red/Mime#62](https://github.com/hey-red/Mime/issues/62))
+- Builds the libmagic native binaries in [GitHub workflows](https://github.com/si618/Mime/actions), so they can be reproduced and checked
+- Uses current C# and .NET conventions and project structure
 
 ## Requirements
 
