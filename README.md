@@ -18,7 +18,11 @@ Only the NuGet package name differs from hey-red/Mime. No code changes should be
 ## Why fork?
 
 - Keeps the bundled libmagic native binaries, .NET runtimes and referenced packages up to date
-- Detects large files correctly ([hey-red/Mime#62](https://github.com/hey-red/Mime/issues/62))
+- Bug fixes:
+  - Large files no longer detected as `application/octet-stream` ([hey-red/Mime#62](https://github.com/hey-red/Mime/issues/62))
+  - Unicode file paths work on Windows ([hey-red/Mime#63](https://github.com/hey-red/Mime/issues/63))
+  - Non-ASCII libmagic output no longer garbled on Windows ([#59](https://github.com/si618/Mime/pull/59))
+  - Native handle leak and unsafe handle closing fixed ([#40](https://github.com/si618/Mime/pull/40))
 - Builds the libmagic native binaries in [GitHub workflows](https://github.com/si618/Mime/actions), so they can be reproduced and checked
 - Uses current C# and .NET conventions and project structure
 
