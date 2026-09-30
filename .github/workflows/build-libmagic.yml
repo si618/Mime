@@ -14,16 +14,27 @@ on:
   schedule:
     - cron: '0 6 * * 1'
 
+permissions:
+  contents: read
+
 env:
   FILE_REPO: https://github.com/file/file.git
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   LLVM_MINGW_TAG: '20260602'
+  # The Alpine SDK image only carries the .NET 10 runtime (and no bash for dotnet-install.sh),
+  # so the net8.0 tests need the 8.0 runtime unpacked beside it.
+  INSTALL_NET8_RUNTIME: >-
+    curl -fsSL https://aka.ms/dotnet/8.0/dotnet-runtime-linux-musl-$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/').tar.gz
+    | tar -xz -C /usr/share/dotnet ./shared
   LLVM_MINGW_SHA256: '3de3eda9377bbaf35f8c9001f190380f63b8ee981fa55d3ae9d7cce7c6ad7c70'
 
 jobs:
   resolve-version:
     name: Resolve file version
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # the scheduled run skips versions that already have a PR
     outputs:
       file_version: ${{ steps.resolve.outputs.file_version }}
       should_run: ${{ steps.resolve.outputs.should_run }}
@@ -543,7 +554,10 @@ jobs:
           ref: ${{ inputs.test_ref || github.ref }}
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
-          dotnet-version: '10.0.x'
+          # 8.0 is the runtime for the net8.0 tests; 10.0 brings the SDK.
+          dotnet-version: |
+            8.0.x
+            10.0.x
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: magic-db
@@ -573,7 +587,10 @@ jobs:
           ref: ${{ inputs.test_ref || github.ref }}
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
-          dotnet-version: '10.0.x'
+          # 8.0 is the runtime for the net8.0 tests; 10.0 brings the SDK.
+          dotnet-version: |
+            8.0.x
+            10.0.x
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: magic-db
@@ -623,7 +640,7 @@ jobs:
             -v "${{ github.workspace }}:/workspace" \
             -w /workspace \
             mcr.microsoft.com/dotnet/sdk:10.0-alpine \
-            dotnet test --output Detailed
+            sh -euc "$INSTALL_NET8_RUNTIME && dotnet test --output Detailed"
 
   test-linux-musl-arm64:
     name: Test linux-musl-arm64
@@ -659,7 +676,7 @@ jobs:
             -v "${{ github.workspace }}:/workspace" \
             -w /workspace \
             mcr.microsoft.com/dotnet/sdk:10.0-alpine \
-            dotnet test test/MimeTests/MimeTests.csproj -p:Platform=ARM64 --output Detailed
+            sh -euc "$INSTALL_NET8_RUNTIME && dotnet test test/MimeTests/MimeTests.csproj -p:Platform=ARM64 --output Detailed"
 
   test-osx-x64:
     name: Test osx-x64
@@ -675,7 +692,10 @@ jobs:
           ref: ${{ inputs.test_ref || github.ref }}
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
-          dotnet-version: '10.0.x'
+          # 8.0 is the runtime for the net8.0 tests; 10.0 brings the SDK.
+          dotnet-version: |
+            8.0.x
+            10.0.x
           architecture: x64
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
@@ -710,7 +730,10 @@ jobs:
           ref: ${{ inputs.test_ref || github.ref }}
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
-          dotnet-version: '10.0.x'
+          # 8.0 is the runtime for the net8.0 tests; 10.0 brings the SDK.
+          dotnet-version: |
+            8.0.x
+            10.0.x
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: magic-db
@@ -744,7 +767,10 @@ jobs:
           ref: ${{ inputs.test_ref || github.ref }}
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
-          dotnet-version: '10.0.x'
+          # 8.0 is the runtime for the net8.0 tests; 10.0 brings the SDK.
+          dotnet-version: |
+            8.0.x
+            10.0.x
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: magic-db
@@ -777,7 +803,10 @@ jobs:
           dotnet-version: '10.0.x'
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
-          dotnet-version: '10.0.x'
+          # The x86 test host needs both x86 runtimes: 8.0 for net8.0, 10.0 for net10.0.
+          dotnet-version: |
+            8.0.x
+            10.0.x
           architecture: x86
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:

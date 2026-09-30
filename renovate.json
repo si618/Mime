@@ -20,6 +20,12 @@
       "matchManagers": ["docker-compose", "dockerfile"],
       "automerge": false,
       "groupName": "Docker images"
+    },
+    {
+      "description": "dotnet-version in the workflows installs the net8.0 test runtime; global.json picks the SDK. Remove when net8.0 is dropped.",
+      "matchManagers": ["github-actions"],
+      "matchDepNames": ["dotnet-sdk"],
+      "enabled": false
     }
   ]
 }

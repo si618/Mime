@@ -26,7 +26,7 @@ public sealed class Magic : IDisposable
     {
         get
         {
-            var err = Marshal.PtrToStringAnsi(MagicNative.MagicError(_magic));
+            var err = Marshal.PtrToStringUTF8(MagicNative.MagicError(_magic));
             return err is { Length: > 0 } ? char.ToUpper(err[0], CultureInfo.InvariantCulture) + err[1..] : string.Empty;
         }
     }
@@ -73,7 +73,7 @@ public sealed class Magic : IDisposable
             return Read(buffer, buffer.Length);
         }
 
-        return Marshal.PtrToStringAnsi(MagicNative.MagicFile(_magic, filePath))
+        return Marshal.PtrToStringUTF8(MagicNative.MagicFile(_magic, filePath))
             ?? throw new MagicException(LastError);
     }
 
@@ -94,7 +94,7 @@ public sealed class Magic : IDisposable
 
         var length = Math.Min(buffer.Length, bufferSize);
 
-        return Marshal.PtrToStringAnsi(MagicNative.MagicBuffer(_magic, buffer, length))
+        return Marshal.PtrToStringUTF8(MagicNative.MagicBuffer(_magic, buffer, length))
             ?? throw new MagicException(LastError);
     }
 
