@@ -367,13 +367,17 @@ jobs:
       run:
         shell: msys2 {0}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: .github/scripts
+
       - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2
         with:
           msystem: MINGW64
           install: >-
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-zlib
-            mingw-w64-x86_64-libgnurx
+            mingw-w64-x86_64-libsystre
             autoconf automake libtool make git
 
       - name: Clone file source
@@ -393,7 +397,8 @@ jobs:
           mkdir -p $GITHUB_WORKSPACE/output
           cp ~/file-src/src/.libs/libmagic-1.dll $GITHUB_WORKSPACE/output/
           strip $GITHUB_WORKSPACE/output/libmagic-1.dll
-          cp /mingw64/bin/libgnurx-0.dll $GITHUB_WORKSPACE/output/
+          .github/scripts/collect-mingw-dlls.sh objdump $GITHUB_WORKSPACE/output/libmagic-1.dll /mingw64/bin $GITHUB_WORKSPACE/output
+          ls -la $GITHUB_WORKSPACE/output/
 
       - name: Upload
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -410,13 +415,17 @@ jobs:
       run:
         shell: msys2 {0}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: .github/scripts
+
       - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2
         with:
           msystem: MINGW32
           install: >-
             mingw-w64-i686-gcc
             mingw-w64-i686-zlib
-            mingw-w64-i686-libgnurx
+            mingw-w64-i686-libsystre
             autoconf automake libtool make git
 
       - name: Clone file source
@@ -436,9 +445,7 @@ jobs:
           mkdir -p $GITHUB_WORKSPACE/output
           cp ~/file-src/src/.libs/libmagic-1.dll $GITHUB_WORKSPACE/output/
           strip $GITHUB_WORKSPACE/output/libmagic-1.dll
-          cp /mingw32/bin/libgnurx-0.dll $GITHUB_WORKSPACE/output/
-          cp /mingw32/bin/libgcc_s_dw2-1.dll $GITHUB_WORKSPACE/output/
-          cp /mingw32/bin/libwinpthread-1.dll $GITHUB_WORKSPACE/output/
+          .github/scripts/collect-mingw-dlls.sh objdump $GITHUB_WORKSPACE/output/libmagic-1.dll /mingw32/bin $GITHUB_WORKSPACE/output
           ls -la $GITHUB_WORKSPACE/output/
 
       - name: Upload
@@ -456,13 +463,17 @@ jobs:
       run:
         shell: msys2 {0}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: .github/scripts
+
       - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2
         with:
           msystem: MINGW64
           install: >-
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-zlib
-            mingw-w64-x86_64-libgnurx
+            mingw-w64-x86_64-libsystre
             autoconf automake libtool make git
 
       - name: Download and verify llvm-mingw toolchain
@@ -499,25 +510,27 @@ jobs:
           cp src/.libs/*.dll ~/file-native/ 2>/dev/null || true
           make distclean
 
-      - name: Get arm64 gnurx library
+      - name: Get arm64 regex library
         run: |
-          # Download the MSYS2 arm64 gnurx package and extract lib/dll
-          pacman -Sw --noconfirm --cachedir /tmp/pkg mingw-w64-clang-aarch64-libgnurx
-          mkdir -p ~/arm64-gnurx
-          for pkg in /tmp/pkg/mingw-w64-clang-aarch64-libgnurx-*.zst; do
-            tar -xf "$pkg" -C ~/arm64-gnurx 2>/dev/null || true
+          # Download the MSYS2 arm64 libsystre package and its dependencies (libtre, gettext-runtime,
+          # libiconv, ...) and extract them. libsystre also installs libgnurx import-library aliases,
+          # which is what file's configure looks for.
+          pacman -Sw --noconfirm --cachedir /tmp/pkg mingw-w64-clang-aarch64-libsystre
+          mkdir -p ~/arm64-deps
+          for pkg in /tmp/pkg/mingw-w64-clang-aarch64-*.pkg.tar.zst; do
+            tar -xf "$pkg" -C ~/arm64-deps
           done
-          ls -la ~/arm64-gnurx/clangarm64/lib/libgnurx* ~/arm64-gnurx/clangarm64/bin/libgnurx* 2>/dev/null || true
+          ls -la ~/arm64-deps/clangarm64/lib/libgnurx* ~/arm64-deps/clangarm64/bin/
 
       - name: Cross-compile for aarch64
         run: |
           cd ~/file-src
           LLVM_MINGW=$(cygpath -u "$(ls -d /d/llvm-mingw/llvm-mingw-*)")
-          GNURX_DIR="$HOME/arm64-gnurx/clangarm64"
+          DEPS_DIR="$HOME/arm64-deps/clangarm64"
           export PATH="$LLVM_MINGW/bin:$PATH"
           CONFIG_SITE=/dev/null \
-          CFLAGS="-O2 -Wno-incompatible-pointer-types -I$GNURX_DIR/include" \
-          LDFLAGS="-L$GNURX_DIR/lib" \
+          CFLAGS="-O2 -Wno-incompatible-pointer-types -I$DEPS_DIR/include" \
+          LDFLAGS="-L$DEPS_DIR/lib" \
           CC=aarch64-w64-mingw32-gcc \
           ./configure --host=aarch64-w64-mingw32 --disable-static --enable-shared \
             --disable-zlib \
@@ -527,12 +540,12 @@ jobs:
       - name: Prepare artifact
         run: |
           LLVM_MINGW=$(cygpath -u "$(ls -d /d/llvm-mingw/llvm-mingw-*)")
-          GNURX_DIR="$HOME/arm64-gnurx/clangarm64"
+          DEPS_DIR="$HOME/arm64-deps/clangarm64"
           mkdir -p $GITHUB_WORKSPACE/output
           cp ~/file-src/src/.libs/libmagic-1.dll $GITHUB_WORKSPACE/output/
           "$LLVM_MINGW/bin/aarch64-w64-mingw32-strip" $GITHUB_WORKSPACE/output/libmagic-1.dll
-          cp "$GNURX_DIR/bin/libgnurx-0.dll" $GITHUB_WORKSPACE/output/ 2>/dev/null || true
-          file $GITHUB_WORKSPACE/output/libmagic-1.dll
+          .github/scripts/collect-mingw-dlls.sh "$LLVM_MINGW/bin/llvm-objdump" $GITHUB_WORKSPACE/output/libmagic-1.dll "$DEPS_DIR/bin" $GITHUB_WORKSPACE/output
+          file $GITHUB_WORKSPACE/output/*.dll
 
       - name: Upload
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -866,6 +879,8 @@ jobs:
           cp artifacts/linux-musl-arm64/libmagic-1.so src/Mime/runtimes/linux-musl-arm64/native/libmagic-1.so
           cp artifacts/osx-x64/libmagic-1.dylib src/Mime/runtimes/osx-x64/native/libmagic-1.dylib
           cp artifacts/osx-arm64/libmagic-1.dylib src/Mime/runtimes/osx-arm64/native/libmagic-1.dylib
+          # The Windows DLL set follows libmagic's imports, so drop the old set before copying the new one.
+          rm -f src/Mime/runtimes/win-x64/native/* src/Mime/runtimes/win-x86/native/* src/Mime/runtimes/win-arm64/native/*
           cp artifacts/win-x64/* src/Mime/runtimes/win-x64/native/
           cp artifacts/win-x86/* src/Mime/runtimes/win-x86/native/
           cp artifacts/win-arm64/* src/Mime/runtimes/win-arm64/native/
@@ -916,6 +931,6 @@ jobs:
           | linux-musl-arm64 | libmagic-1.so          | Yes    |
           | osx-x64          | libmagic-1.dylib       | Yes    |
           | osx-arm64        | libmagic-1.dylib       | Yes    |
-          | win-x64          | libmagic-1.dll + gnurx | Yes    |
-          | win-x86          | libmagic-1.dll + gnurx | Yes    |
-          | win-arm64        | libmagic-1.dll         | No     |"
+          | win-x64          | libmagic-1.dll + deps  | Yes    |
+          | win-x86          | libmagic-1.dll + deps  | Yes    |
+          | win-arm64        | libmagic-1.dll + deps  | No     |"
