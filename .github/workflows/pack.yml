@@ -26,17 +26,24 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
+      # global.json selects the SDK; the 8.0 runtime is still needed to run the net8.0 tests.
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
-          dotnet-version: |
-            8.0.x
-            10.0.x
+          global-json-file: global.json
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore Mime.slnx
+
+      # Version is set at build time so the assemblies and the package agree; pack then reuses this build.
+      - name: Build
+        run: dotnet build Mime.slnx --no-restore -c Release -warnaserror -p:Version=${GITHUB_REF_NAME#v}
 
       - name: Test
-        run: dotnet test test/MimeTests/MimeTests.csproj -c Release
+        run: dotnet test test/MimeTests/MimeTests.csproj --no-build -c Release
 
       - name: Pack
-        run: dotnet pack src/Mime/Mime.csproj -c Release -o nupkg -p:Version=${GITHUB_REF_NAME#v} -p:ContinuousIntegrationBuild=true
+        run: dotnet pack src/Mime/Mime.csproj --no-build -c Release -o nupkg -p:Version=${GITHUB_REF_NAME#v}
 
       - name: Upload NuGet package
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

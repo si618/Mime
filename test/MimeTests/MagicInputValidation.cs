@@ -1,6 +1,6 @@
-namespace MimeTests;
+﻿namespace MimeTests;
 
-public class MagicInputValidation : IDisposable
+public sealed class MagicInputValidation : IDisposable
 {
     private readonly Magic _magic;
 

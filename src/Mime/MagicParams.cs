@@ -1,4 +1,8 @@
-﻿namespace HeyRed.Mime;
+﻿// Member names and values mirror the libmagic C constants (LIBMAGIC(3)) one for one, and renaming
+// them would break the public API. That includes aliases sharing a value and the "Flags" suffix.
+#pragma warning disable CA1707
+
+namespace HeyRed.Mime;
 
 /// <summary>
 /// The various limits.
@@ -53,5 +57,5 @@ public enum MagicParams
     /// <summary>
     /// The parameter controls the maximum number of warnings to tolerate in a magic file.
     /// </summary>
-    MAGIC_PARAM_MAGWARN_MAX
+    MAGIC_PARAM_MAGWARN_MAX,
 }

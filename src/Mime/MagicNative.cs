@@ -1,3 +1,7 @@
+// Names mirror the libmagic C API (LIBMAGIC(3)): the library name constant and the magic_cookie
+// parameters keep their C spelling so each import reads against the man page.
+#pragma warning disable IDE1006
+
 namespace HeyRed.Mime;
 
 internal static partial class MagicNative

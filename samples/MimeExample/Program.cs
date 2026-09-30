@@ -71,7 +71,7 @@ using (var magic = new Magic(MagicOpenFlags.MAGIC_NONE))
 string tempTxt = Path.GetTempFileName();
 try
 {
-    await File.WriteAllTextAsync(tempTxt, "Hello, world! こんにちは", System.Text.Encoding.UTF8);
+    await File.WriteAllTextAsync(tempTxt, "Hello, world! こんにちは", System.Text.Encoding.UTF8).ConfigureAwait(false);
 
     using var magic = new Magic(MagicOpenFlags.MAGIC_MIME_ENCODING);
     Console.WriteLine($"Encoding    → {magic.Read(tempTxt)}");
@@ -90,4 +90,4 @@ using (var magic = new Magic(MagicOpenFlags.MAGIC_MIME_TYPE | MagicOpenFlags.MAG
 Console.WriteLine();
 
 // Library version
-Console.WriteLine($"libmagic version: {Magic.Version}");
+Console.WriteLine($"libmagic version: {Magic.Version.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
