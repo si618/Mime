@@ -1,5 +1,7 @@
 # Publishes the MimeMagic package to nuget.org when a v* tag is pushed
-# (e.g. v4.0.0 publishes version 4.0.0).
+# (e.g. v4.0.0 publishes version 4.0.0), then creates a GitHub release for the
+# tag with notes generated from the pull requests merged since the previous tag.
+# The package's release notes link to that GitHub release.
 #
 # Authentication uses nuget.org Trusted Publishing: NuGet/login exchanges the
 # GitHub OIDC token for a short-lived API key, so no long-lived key is stored.
@@ -21,7 +23,7 @@ jobs:
     name: Pack & Publish NuGet
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write # create the GitHub release
       id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -43,7 +45,7 @@ jobs:
         run: dotnet test test/MimeTests/MimeTests.csproj --no-build -c Release
 
       - name: Pack
-        run: dotnet pack src/Mime/Mime.csproj --no-build -c Release -o nupkg -p:Version=${GITHUB_REF_NAME#v}
+        run: dotnet pack src/Mime/Mime.csproj --no-build -c Release -o nupkg -p:Version=${GITHUB_REF_NAME#v} -p:PackageReleaseNotes=https://github.com/${{ github.repository }}/releases/tag/${GITHUB_REF_NAME}
 
       - name: Upload NuGet package
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -62,3 +64,8 @@ jobs:
 
       - name: Publish to nuget.org
         run: dotnet nuget push "nupkg/*.nupkg" --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - name: Create GitHub release
+        run: gh release create "$GITHUB_REF_NAME" nupkg/*.nupkg nupkg/*.snupkg --verify-tag --generate-notes --title "MimeMagic ${GITHUB_REF_NAME#v}"
+        env:
+          GH_TOKEN: ${{ github.token }}
