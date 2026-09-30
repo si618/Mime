@@ -589,7 +589,7 @@ jobs:
       - name: Build and verify native lib
         run: |
           dotnet build test/MimeTests/MimeTests.csproj -p:Platform=ARM64
-          file artifacts/bin/MimeTests/debug_net10.0/libmagic-1.so
+          file artifacts/bin/MimeTests/debug_net10.0_arm64/libmagic-1.so
       - name: Run tests
         run: dotnet test test/MimeTests/MimeTests.csproj --no-build -p:Platform=ARM64 --output Detailed
 
@@ -692,7 +692,7 @@ jobs:
       - name: Build and verify native lib
         run: |
           dotnet build test/MimeTests/MimeTests.csproj -p:Platform=x64
-          file artifacts/bin/MimeTests/debug_net10.0/libmagic-1.dylib
+          file artifacts/bin/MimeTests/debug_net10.0_x64/libmagic-1.dylib
       - name: Run tests
         run: dotnet test test/MimeTests/MimeTests.csproj --no-build -p:Platform=x64 --output Detailed
 
@@ -726,7 +726,7 @@ jobs:
       - name: Build and verify native lib
         run: |
           dotnet build test/MimeTests/MimeTests.csproj -p:Platform=ARM64
-          file artifacts/bin/MimeTests/debug_net10.0/libmagic-1.dylib
+          file artifacts/bin/MimeTests/debug_net10.0_arm64/libmagic-1.dylib
       - name: Run tests
         run: dotnet test test/MimeTests/MimeTests.csproj --no-build -p:Platform=ARM64 --output Detailed
 
@@ -795,7 +795,7 @@ jobs:
         run: |
           Get-ChildItem src/Mime/runtimes/win-x86/native/
           dotnet build test/MimeTests -p:Platform=x86
-          Get-ChildItem artifacts/bin/MimeTests/debug_net10.0/ -Filter "lib*"
+          Get-ChildItem artifacts/bin/MimeTests/debug_net10.0_x86/ -Filter "lib*"
           dotnet test test/MimeTests --no-build -p:Platform=x86 --output Detailed
         env:
           DOTNET_ROOT_X86: C:\Program Files\dotnet\x86
