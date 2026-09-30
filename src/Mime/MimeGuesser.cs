@@ -20,8 +20,6 @@ public static class MimeGuesser
         MagicOpenFlags.MAGIC_NO_CHECK_ELF |
         MagicOpenFlags.MAGIC_NO_CHECK_APPTYPE;
 
-    #region Guess mime type
-
     /// <summary>
     /// Get mime type from file.
     /// </summary>
@@ -61,10 +59,6 @@ public static class MimeGuesser
         return magic.Read(stream, 1048576);
     }
 
-    #endregion Guess mime type
-
-    #region Guess extension
-
     /// <summary>
     /// Get file extension from path.
     /// </summary>
@@ -85,10 +79,6 @@ public static class MimeGuesser
     /// <param name="stream"></param>
     /// <returns>Extension as string</returns>
     public static string GuessExtension(Stream stream) => MimeTypesMap.GetExtension(GuessMimeType(stream));
-
-    #endregion Guess extension
-
-    #region Guess file type
 
     /// <summary>
     /// Get file type from path.
@@ -128,8 +118,6 @@ public static class MimeGuesser
 
         return new FileType(mime, ext);
     }
-
-    #endregion Guess file type
 
     /// <param name="fi">File to inspect.</param>
     extension(FileInfo fi)

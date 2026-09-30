@@ -249,8 +249,6 @@ public sealed class Magic : IDisposable
         }
     }
 
-    #region IDisposable support
-
     private bool _disposed;
 
     private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, this);
@@ -286,6 +284,4 @@ public sealed class Magic : IDisposable
 
         GC.SuppressFinalize(this);
     }
-
-    #endregion IDisposable support
 }
