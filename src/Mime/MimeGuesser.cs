@@ -61,13 +61,6 @@ public static class MimeGuesser
         return magic.Read(stream, 1048576);
     }
 
-    /// <summary>
-    /// <see cref="GuessMimeType(string)"/>
-    /// </summary>
-    /// <param name="fi"></param>
-    /// <returns>Mime type as string</returns>
-    public static string GuessMimeType(this FileInfo fi) => GuessMimeType(fi.FullName);
-
     #endregion Guess mime type
 
     #region Guess extension
@@ -92,13 +85,6 @@ public static class MimeGuesser
     /// <param name="stream"></param>
     /// <returns>Extension as string</returns>
     public static string GuessExtension(Stream stream) => MimeTypesMap.GetExtension(GuessMimeType(stream));
-
-    /// <summary>
-    /// <see cref="GuessExtension(string)"/>
-    /// </summary>
-    /// <param name="fi"></param>
-    /// <returns>Extension as string</returns>
-    public static string GuessExtension(this FileInfo fi) => GuessExtension(fi.FullName);
 
     #endregion Guess extension
 
@@ -143,12 +129,31 @@ public static class MimeGuesser
         return new FileType(mime, ext);
     }
 
-    /// <summary>
-    /// <see cref="GuessFileType(string)"/>
-    /// </summary>
-    /// <param name="fi"></param>
-    /// <returns>FileType</returns>
-    public static FileType GuessFileType(this FileInfo fi) => GuessFileType(fi.FullName);
-
     #endregion Guess file type
+
+    #region FileInfo extensions
+
+    /// <param name="fi">File to inspect.</param>
+    extension(FileInfo fi)
+    {
+        /// <summary>
+        /// <see cref="GuessMimeType(string)"/>
+        /// </summary>
+        /// <returns>Mime type as string</returns>
+        public string GuessMimeType() => MimeGuesser.GuessMimeType(fi.FullName);
+
+        /// <summary>
+        /// <see cref="GuessExtension(string)"/>
+        /// </summary>
+        /// <returns>Extension as string</returns>
+        public string GuessExtension() => MimeGuesser.GuessExtension(fi.FullName);
+
+        /// <summary>
+        /// <see cref="GuessFileType(string)"/>
+        /// </summary>
+        /// <returns>FileType</returns>
+        public FileType GuessFileType() => MimeGuesser.GuessFileType(fi.FullName);
+    }
+
+    #endregion FileInfo extensions
 }

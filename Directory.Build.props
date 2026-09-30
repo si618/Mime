@@ -6,6 +6,15 @@
     <!-- One artifacts/<type>/<project>/<pivot> root for all build output. Must be set here or on the
          command line: MSBuild reads it before project evaluation, so a .csproj setting fails with NETSDK1199. -->
     <UseArtifactsOutput>true</UseArtifactsOutput>
+    <!-- The default pivot (configuration_tfm) omits the platform, so an ARM64 or x86 build overwrites the
+         Any CPU output and breaks incremental builds. The SDK skips its own default once this is set, so
+         rebuild it the same way (Configuration is not yet defaulted here) and append the platform for
+         non-Any CPU builds only. The restore root (artifacts/obj/<project>) is unchanged. -->
+    <_IsPlatformPivot Condition="'$(Platform)' != '' And '$(Platform)' != 'AnyCPU'">true</_IsPlatformPivot>
+    <ArtifactsPivots Condition="'$(_IsPlatformPivot)' == 'true'">$(Configuration.ToLowerInvariant())</ArtifactsPivots>
+    <ArtifactsPivots Condition="'$(_IsPlatformPivot)' == 'true' And '$(Configuration)' == ''">debug</ArtifactsPivots>
+    <ArtifactsPivots Condition="'$(_IsPlatformPivot)' == 'true' And '$(TargetFramework)' != ''">$(ArtifactsPivots)_$(TargetFramework.ToLowerInvariant())</ArtifactsPivots>
+    <ArtifactsPivots Condition="'$(_IsPlatformPivot)' == 'true'">$(ArtifactsPivots)_$(Platform.ToLowerInvariant())</ArtifactsPivots>
   </PropertyGroup>
 
   <PropertyGroup Label="Targets and language">

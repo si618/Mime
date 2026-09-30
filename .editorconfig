@@ -64,6 +64,11 @@ dotnet_diagnostic.CA1307.severity = warning
 # bulk dotnet_analyzer_diagnostic.severity above (opinions/datetime.md).
 dotnet_diagnostic.MA0167.severity = warning
 
+# MA0038 (make method static) is deprecated upstream in favour of CA1822, which already runs. It
+# only warns here because the bulk severity above raises it, and it misreads C# 14 extension-block
+# members: it doesn't see that they use the receiver.
+dotnet_diagnostic.MA0038.severity = none
+
 # --- Nullability and correctness ---
 dotnet_style_require_accessibility_modifiers = always:warning
 dotnet_style_readonly_field = true:warning
