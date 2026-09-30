@@ -131,8 +131,6 @@ public static class MimeGuesser
 
     #endregion Guess file type
 
-    #region FileInfo extensions
-
     /// <param name="fi">File to inspect.</param>
     extension(FileInfo fi)
     {
@@ -154,6 +152,4 @@ public static class MimeGuesser
         /// <returns>FileType</returns>
         public FileType GuessFileType() => MimeGuesser.GuessFileType(fi.FullName);
     }
-
-    #endregion FileInfo extensions
 }
