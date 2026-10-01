@@ -18,7 +18,7 @@ Only the NuGet package name differs from hey-red/Mime. No code changes should be
 ## Why fork?
 
 - Keeps the bundled libmagic native binaries, .NET runtimes and referenced packages up to date
-- Bug fixes:
+- Bug fixes
   - Large files no longer detected as `application/octet-stream` ([hey-red/Mime#62](https://github.com/hey-red/Mime/issues/62))
   - Unicode file paths work on Windows ([hey-red/Mime#63](https://github.com/hey-red/Mime/issues/63))
   - Non-ASCII libmagic output no longer garbled on Windows ([#59](https://github.com/si618/Mime/pull/59))
@@ -41,6 +41,17 @@ Supported runtimes:
 - win-arm64 (not currently tested due to lack of GitHub runner)
 - win-x64
 - win-x86
+
+### Linux native library
+
+The bundled `libmagic-1.so` needs libc and zlib (`libz.so.1`), as well as `libm.so.6` on glibc:
+
+- **linux-x64 / linux-arm64:** glibc 2.28 or later, e.g. RHEL 8, Debian 12 or Ubuntu 22.04
+- **linux-musl-x64 / linux-musl-arm64:** built on Alpine 3.21, the oldest Alpine .NET supports
+
+The glibc baseline is the oldest glibc of any distro on the [supported-OS list](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md) of the oldest .NET release this package targets. Currently that's RHEL 8. The baseline rises when that distro drops off the list. The [Build libmagic workflow](.github/workflows/build-libmagic.yml) builds in a `manylinux_2_28` container and fails if a binary needs a newer glibc or any other shared library.
+
+libmagic is built with zlib only, so with `MAGIC_COMPRESS` it decompresses gzip in-process. For other formats (bzip2, xz, zstd, ...) it runs the matching command-line tool, if one is installed. `MimeGuesser` doesn't look inside compressed files, so this only matters when you pass `MAGIC_COMPRESS` to `Magic` yourself.
 
 ## Basic usage
 
@@ -127,11 +138,14 @@ Publishing uses [nuget.org Trusted Publishing](https://learn.microsoft.com/nuget
 
 ## Possible problems
 
-| Exception                                             | Solution                                                                                                                                                                       |
-| :---------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| DllNotFoundException                                  | Make sure your `bin` folder contains the runtimes directory. If publishing a platform-dependent app, `bin` should contain `libmagic-1` (.dll, .so, or .dylib) and `magic.mgc`. |
-| BadImageFormatException                               | Try targeting `x64` or `arm64` instead of `AnyCPU`.                                                                                                                            |
-| MagicException: Could not find any valid magic files! | Make sure `magic.mgc` is in one of the `/runtimes/` subdirs or alongside `libmagic-1.[dll\|lib\|dylib]`. Or set a custom path as described in [basic usage](#basic-usage).     |
+| Exception                                                | Solution                                                                                                                                                                       |
+| :------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DllNotFoundException                                     | Make sure your `bin` folder contains the runtimes directory. If publishing a platform-dependent app, `bin` should contain `libmagic-1` (.dll, .so, or .dylib) and `magic.mgc`. |
+| DllNotFoundException: ``version `GLIBC_2.xx' not found`` | The host glibc is older than 2.28, see [Linux native library](#linux-native-library). MimeMagic 4.0.0–4.0.2 needed glibc 2.38; upgrade to a later version.                     |
+| DllNotFoundException: `libz.so.1` not found              | Install zlib, e.g. `apt-get install zlib1g`, `dnf install zlib` or `apk add zlib`. Some minimal and distroless images leave it out.                                            |
+| DllNotFoundException: `libzstd.so.1` not found           | Only MimeMagic 4.0.0–4.0.2 on linux-x64 needs it; upgrade to a later version.                                                                                                  |
+| BadImageFormatException                                  | Try targeting `x64` or `arm64` instead of `AnyCPU`.                                                                                                                            |
+| MagicException: Could not find any valid magic files!    | Make sure `magic.mgc` is in one of the `/runtimes/` subdirs or alongside `libmagic-1.[dll\|lib\|dylib]`. Or set a custom path as described in [basic usage](#basic-usage).     |
 
 ## License
 
