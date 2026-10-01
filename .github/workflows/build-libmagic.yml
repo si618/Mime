@@ -27,6 +27,17 @@ env:
     curl -fsSL https://aka.ms/dotnet/8.0/dotnet-runtime-linux-musl-$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/').tar.gz
     | tar -xz -C /usr/share/dotnet ./shared
   LLVM_MINGW_SHA256: '3de3eda9377bbaf35f8c9001f190380f63b8ee981fa55d3ae9d7cce7c6ad7c70'
+  # The oldest glibc of any distro on the supported-OS list of the oldest .NET release we target
+  # (RHEL 8 for both .NET 8 and .NET 10). The glibc builds use a manylinux_2_28 container to match.
+  # Raise it only when that distro drops off the list.
+  GLIBC_BASELINE: '2.28'
+  # configure enables every compression library it finds, so whatever happens to be installed on the
+  # build host becomes a runtime dependency. Keep zlib and turn the rest off, so the Linux builds only
+  # need libc and libz everywhere. libmagic runs the external decompressor for the formats left out.
+  LINUX_CONFIGURE_FLAGS: >-
+    --disable-static --enable-shared
+    --disable-bzlib --disable-xzlib --disable-zstdlib --disable-lzlib --disable-lrziplib --disable-lz4lib
+    --disable-libseccomp
 
 jobs:
   resolve-version:
@@ -126,20 +137,22 @@ jobs:
     needs: resolve-version
     if: needs.resolve-version.outputs.should_run == 'true'
     runs-on: ubuntu-latest
+    # glibc 2.28 (GLIBC_BASELINE); the image already carries git, autotools and gcc-toolset.
+    container: quay.io/pypa/manylinux_2_28_x86_64@sha256:c2261579b9c2e5d45aa93312f73e2a302182e3e977b558581a1838d6fed3d8e6
     steps:
+      - name: Install dependencies
+        run: dnf install -y zlib-devel
+
       - name: Clone file source
         env:
           FILE_VERSION: ${{ needs.resolve-version.outputs.file_version }}
         run: git clone --depth 1 --branch "$FILE_VERSION" $FILE_REPO /tmp/file-src
 
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y autoconf automake libtool zlib1g-dev
-
       - name: Build
         working-directory: /tmp/file-src
         run: |
           autoreconf -fiv
-          ./configure --disable-static --enable-shared
+          ./configure $LINUX_CONFIGURE_FLAGS
           make -j$(nproc)
 
       - name: Prepare artifact
@@ -159,56 +172,31 @@ jobs:
     name: Build linux-arm64
     needs: resolve-version
     if: needs.resolve-version.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
+    # Built natively on an arm64 runner: there's no manylinux image for cross-compiling.
+    runs-on: ubuntu-24.04-arm
+    # glibc 2.28 (GLIBC_BASELINE); the image already carries git, autotools and gcc-toolset.
+    container: quay.io/pypa/manylinux_2_28_aarch64@sha256:acc4e63610fef1da3d687322793665205415c2b22c0d2e403f1a44eb834d63fc
     steps:
+      - name: Install dependencies
+        run: dnf install -y zlib-devel
+
       - name: Clone file source
         env:
           FILE_VERSION: ${{ needs.resolve-version.outputs.file_version }}
         run: git clone --depth 1 --branch "$FILE_VERSION" $FILE_REPO /tmp/file-src
 
-      - name: Set up arm64 cross-compilation
-        run: |
-          sudo dpkg --add-architecture arm64
-          CODENAME=$(lsb_release -cs)
-          sudo tee /etc/apt/sources.list.d/amd64.list <<EOF
-          deb [arch=amd64] http://archive.ubuntu.com/ubuntu $CODENAME main universe
-          deb [arch=amd64] http://archive.ubuntu.com/ubuntu $CODENAME-updates main universe
-          deb [arch=amd64] http://security.ubuntu.com/ubuntu $CODENAME-security main universe
-          EOF
-          sudo tee /etc/apt/sources.list.d/arm64.list <<EOF
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $CODENAME main universe
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $CODENAME-updates main universe
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $CODENAME-security main universe
-          EOF
-          sudo rm -f /etc/apt/sources.list
-          sudo find /etc/apt/sources.list.d -name '*.list' ! -name 'amd64.list' ! -name 'arm64.list' -delete
-          sudo find /etc/apt/sources.list.d -name '*.sources' -delete
-          sudo apt-get update
-          sudo apt-get install -y autoconf automake libtool gcc-aarch64-linux-gnu zlib1g-dev:arm64
-
-      - name: Build native file command (for magic compilation)
+      - name: Build
         working-directory: /tmp/file-src
         run: |
           autoreconf -fiv
-          ./configure
+          ./configure $LINUX_CONFIGURE_FLAGS
           make -j$(nproc)
-          mkdir -p /tmp/file-native
-          cp src/.libs/file /tmp/file-native/
-          cp src/.libs/libmagic.so.1.0.0 /tmp/file-native/
-          ln -sf libmagic.so.1.0.0 /tmp/file-native/libmagic.so.1
-          make distclean
-
-      - name: Cross-compile for aarch64
-        working-directory: /tmp/file-src
-        run: |
-          ./configure --host=aarch64-linux-gnu --disable-static --enable-shared
-          LD_LIBRARY_PATH=/tmp/file-native make -j$(nproc) FILE_COMPILE=/tmp/file-native/file
 
       - name: Prepare artifact
         run: |
           mkdir /tmp/output
           cp /tmp/file-src/src/.libs/libmagic.so.1.0.0 /tmp/output/libmagic-1.so
-          aarch64-linux-gnu-strip /tmp/output/libmagic-1.so
+          strip /tmp/output/libmagic-1.so
           file /tmp/output/libmagic-1.so
 
       - name: Upload
@@ -236,7 +224,7 @@ jobs:
         working-directory: /tmp/file-src
         run: |
           autoreconf -fiv
-          ./configure --disable-static --enable-shared
+          ./configure $LINUX_CONFIGURE_FLAGS
           make -j$(nproc)
 
       - name: Prepare artifact
@@ -270,13 +258,14 @@ jobs:
           docker run --rm --platform linux/arm64 \
             -e FILE_VERSION="$FILE_VERSION" \
             -e FILE_REPO="$FILE_REPO" \
+            -e LINUX_CONFIGURE_FLAGS="$LINUX_CONFIGURE_FLAGS" \
             -v /tmp/output:/output \
             alpine:3.21 sh -c '
               apk add --no-cache git build-base autoconf automake libtool zlib-dev
               git clone --depth 1 --branch "$FILE_VERSION" "$FILE_REPO" /tmp/file-src
               cd /tmp/file-src
               autoreconf -fiv
-              ./configure --disable-static --enable-shared
+              ./configure $LINUX_CONFIGURE_FLAGS
               make -j$(nproc)
               cp src/.libs/libmagic.so.1.0.0 /output/libmagic-1.so
               strip /output/libmagic-1.so
@@ -288,6 +277,28 @@ jobs:
         with:
           name: linux-musl-arm64
           path: /tmp/output/libmagic-1.so
+
+  check-linux-deps:
+    name: Check Linux dependencies
+    needs:
+      - build-linux-x64
+      - build-linux-arm64
+      - build-linux-musl-x64
+      - build-linux-musl-arm64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: linux-*
+          path: artifacts
+      - name: Check shared libraries and glibc symbol versions
+        run: |
+          check=.github/scripts/check-linux-deps.sh
+          $check artifacts/linux-x64/libmagic-1.so "$GLIBC_BASELINE" libc.so.6 libm.so.6 libz.so.1
+          $check artifacts/linux-arm64/libmagic-1.so "$GLIBC_BASELINE" libc.so.6 libm.so.6 libz.so.1 ld-linux-aarch64.so.1
+          $check artifacts/linux-musl-x64/libmagic-1.so - libc.musl-x86_64.so.1 libz.so.1
+          $check artifacts/linux-musl-arm64/libmagic-1.so - libc.musl-aarch64.so.1 libz.so.1
 
   build-osx-x64:
     name: Build osx-x64
@@ -560,7 +571,8 @@ jobs:
       - build-magic-db
       - build-linux-x64
     if: needs.resolve-version.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
+    # The oldest Ubuntu on the .NET supported-OS list, so a glibc newer than it has fails to load here.
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -593,7 +605,8 @@ jobs:
       - build-magic-db
       - build-linux-arm64
     if: needs.resolve-version.outputs.should_run == 'true'
-    runs-on: ubuntu-26.04-arm
+    # The oldest Ubuntu on the .NET supported-OS list, so a glibc newer than it has fails to load here.
+    runs-on: ubuntu-22.04-arm
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -846,6 +859,7 @@ jobs:
     name: Update runtimes and create PR
     needs:
       - resolve-version
+      - check-linux-deps
       - test-linux-x64
       - test-linux-arm64
       - test-linux-musl-x64
