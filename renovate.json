@@ -22,6 +22,14 @@
       "groupName": "Docker images"
     },
     {
+      "description": "The Linux test jobs in build-libmagic.yml run on the oldest Ubuntu on the .NET supported-OS list, so a libmagic that needs a newer glibc fails to load there. Move them by hand when that Ubuntu drops off the list.",
+      "matchManagers": ["github-actions"],
+      "matchDatasources": ["github-runners"],
+      "matchPackageNames": ["ubuntu"],
+      "matchCurrentValue": "/^22\\.04/",
+      "enabled": false
+    },
+    {
       "description": "dotnet-version in the workflows installs the net8.0 test runtime; global.json picks the SDK. Remove when net8.0 is dropped.",
       "matchManagers": ["github-actions"],
       "matchDepNames": ["dotnet-sdk"],
