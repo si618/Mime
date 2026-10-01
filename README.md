@@ -19,10 +19,10 @@ Only the NuGet package name differs from hey-red/Mime. No code changes should be
 
 - Keeps the bundled libmagic native binaries, .NET runtimes and referenced packages up to date
 - Bug fixes:
-    - Large files no longer detected as `application/octet-stream` ([hey-red/Mime#62](https://github.com/hey-red/Mime/issues/62))
-    - Unicode file paths work on Windows ([hey-red/Mime#63](https://github.com/hey-red/Mime/issues/63))
-    - Non-ASCII libmagic output no longer garbled on Windows ([#59](https://github.com/si618/Mime/pull/59))
-    - Native handle leak and unsafe handle closing fixed ([#40](https://github.com/si618/Mime/pull/40))
+  - Large files no longer detected as `application/octet-stream` ([hey-red/Mime#62](https://github.com/hey-red/Mime/issues/62))
+  - Unicode file paths work on Windows ([hey-red/Mime#63](https://github.com/hey-red/Mime/issues/63))
+  - Non-ASCII libmagic output no longer garbled on Windows ([#59](https://github.com/si618/Mime/pull/59))
+  - Native handle leak and unsafe handle closing fixed ([#40](https://github.com/si618/Mime/pull/40))
 - Builds the libmagic native binaries in [GitHub workflows](https://github.com/si618/Mime/actions), so they can be reproduced and checked
 - Uses current C# and .NET conventions and project structure
 
@@ -115,14 +115,14 @@ MimeMagic is published to nuget.org by the [Pack workflow](.github/workflows/pac
 2. Pick the version following [SemVer](https://semver.org/). The package version comes from the tag, not from `<Version>` in `src/Mime/Mime.csproj`, which is only the default for local builds. Keep it in step with the tag anyway.
 3. Tag the `master` commit and push the tag:
 
-    ```sh
-    git switch master
-    git pull
-    git tag -a v4.0.0 -m "MimeMagic 4.0.0"
-    git push origin v4.0.0
-    ```
+   ```sh
+   git switch master
+   git pull
+   git tag -a v4.0.0 -m "MimeMagic 4.0.0"
+   git push origin v4.0.0
+   ```
 
-    A pre-release tag such as `v4.1.0-beta.1` publishes a pre-release package.
+   A pre-release tag such as `v4.1.0-beta.1` publishes a pre-release package.
 
 4. Watch the Pack run under the repository's Actions tab. It runs the tests on net8.0 and net10.0, packs with the version taken from the tag (`v4.0.0` becomes `4.0.0`), and pushes the `.nupkg` and `.snupkg` to nuget.org. The packages are also attached to the run as an artifact.
 5. The new version appears on the [MimeMagic package page](https://www.nuget.org/packages/MimeMagic) after nuget.org finishes validating and indexing it, which usually takes a few minutes.
