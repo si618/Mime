@@ -13,6 +13,18 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  check-linux-deps:
+    name: Check Linux native dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Check shared libraries and glibc symbol versions
+        run: |
+          for rid in linux-x64 linux-arm64 linux-musl-x64 linux-musl-arm64; do
+            .github/scripts/check-linux-deps.sh "$rid" "src/Mime/runtimes/$rid/native/libmagic-1.so"
+          done
+
   build-and-test:
     name: Build & Test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
