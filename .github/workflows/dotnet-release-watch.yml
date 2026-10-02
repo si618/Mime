@@ -1,0 +1,38 @@
+# Checks the official .NET releases index weekly and opens an issue when the README "Requirements"
+# rule says to add or drop a target framework: a new LTS, a target past end of support, or an STS
+# target replaced by a newer LTS. The rules live in .github/scripts/check-dotnet-targets.sh.
+#
+# Based on dotnet-awesome-humans' dotnet-release-watch.yml, but compares against TargetFrameworks
+# instead of a checked-in snapshot, so it only speaks up when there's something to change.
+name: .NET release watch
+
+on:
+  schedule:
+    # Wednesdays: .NET GA and patch releases land on Patch Tuesday (US time).
+    - cron: '0 6 * * 3'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Print the issues instead of creating them'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  check:
+    name: Check target frameworks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Open issues for frameworks to add or drop
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
+        run: .github/scripts/check-dotnet-targets.sh
