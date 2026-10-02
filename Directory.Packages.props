@@ -8,6 +8,7 @@
 
   <ItemGroup Label="Library">
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.401" />
+    <PackageVersion Include="MinVer" Version="8.0.0" />
     <PackageVersion Include="MimeTypesMap" Version="1.0.9" />
   </ItemGroup>
 

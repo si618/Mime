@@ -3,7 +3,8 @@
   <PropertyGroup>
     <Description>.NET wrapper for libmagic, bundling native libmagic binaries for Windows, Linux and macOS. Fork of hey-red/Mime.</Description>
     <AssemblyTitle>Mime</AssemblyTitle>
-    <Version>4.0.0</Version>
+    <!-- The version comes from the latest v* git tag (MinVer), so there's no <Version> here. -->
+    <MinVerTagPrefix>v</MinVerTagPrefix>
     <Authors>red;si618</Authors>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PackageId>MimeMagic</PackageId>
@@ -29,6 +30,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
+    <PackageReference Include="MinVer" PrivateAssets="All" />
     <PackageReference Include="MimeTypesMap" IncludeAssets="compile;runtime" />
   </ItemGroup>
     
@@ -64,5 +66,13 @@
     <!-- NuGet only auto-imports build assets named after the PackageId -->
     <None Include="Mime.props" PackagePath="build/MimeMagic.props" Pack="true" />
   </ItemGroup>
+
+  <!-- MinVer defaults AssemblyVersion to major.0.0.0. Keep major.minor.patch.0 as before MinVer: a lower
+       AssemblyVersion than a consumer was compiled against (4.0.3.0) fails to load on .NET. -->
+  <Target Name="SetAssemblyVersionFromMinVer" AfterTargets="MinVer">
+    <PropertyGroup>
+      <AssemblyVersion>$(MinVerMajor).$(MinVerMinor).$(MinVerPatch).0</AssemblyVersion>
+    </PropertyGroup>
+  </Target>
 
 </Project>
