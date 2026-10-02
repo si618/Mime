@@ -112,7 +112,7 @@ MimeMagic is published to nuget.org by the [Pack workflow](.github/workflows/pac
 ### Publishing a release
 
 1. Make sure `master` is green in CI and contains everything intended for the release.
-2. Pick the version following [SemVer](https://semver.org/). The package version comes from the tag, not from `<Version>` in `src/Mime/Mime.csproj`, which is only the default for local builds. Keep it in step with the tag anyway.
+2. Pick the version following [SemVer](https://semver.org/). The tag is the only place the version is set: [MinVer](https://github.com/adamralph/minver) reads it at build time, so there's no `<Version>` to edit. Builds between releases get a pre-release version above the last tag, such as `4.0.4-alpha.0.3` (3 commits after `v4.0.3`).
 3. Tag the `master` commit and push the tag:
 
    ```sh
@@ -124,7 +124,7 @@ MimeMagic is published to nuget.org by the [Pack workflow](.github/workflows/pac
 
    A pre-release tag such as `v4.1.0-beta.1` publishes a pre-release package.
 
-4. Watch the Pack run under the repository's Actions tab. It runs the tests on net8.0 and net10.0, packs with the version taken from the tag (`v4.0.0` becomes `4.0.0`), and pushes the `.nupkg` and `.snupkg` to nuget.org. The packages are also attached to the run as an artifact.
+4. Watch the Pack run under the repository's Actions tab. It runs the tests on net8.0 and net10.0, packs with the version taken from the tag (`v4.0.0` becomes `4.0.0`), checks the package version matches the tag, and pushes the `.nupkg` and `.snupkg` to nuget.org. The packages are also attached to the run as an artifact.
 5. The new version appears on the [MimeMagic package page](https://www.nuget.org/packages/MimeMagic) after nuget.org finishes validating and indexing it, which usually takes a few minutes.
 
 Versions on nuget.org are immutable, so a published version can't be replaced. To fix a bad release, unlist it on nuget.org and tag a new version. Re-pushing an existing version is skipped (`--skip-duplicate`).

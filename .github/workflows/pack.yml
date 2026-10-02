@@ -26,7 +26,10 @@ jobs:
       contents: write # create the GitHub release
       id-token: write
     steps:
+      # Full history: MinVer needs the tags.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
 
       # global.json selects the SDK; the 8.0 runtime is still needed to run the net8.0 tests.
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
@@ -37,15 +40,24 @@ jobs:
       - name: Restore
         run: dotnet restore Mime.slnx
 
-      # Version is set at build time so the assemblies and the package agree; pack then reuses this build.
+      # MinVer versions the build from the tag; pack reuses it.
       - name: Build
-        run: dotnet build Mime.slnx --no-restore -c Release -warnaserror -p:Version=${GITHUB_REF_NAME#v}
+        run: dotnet build Mime.slnx --no-restore -c Release -warnaserror
 
       - name: Test
         run: dotnet test test/MimeTests/MimeTests.csproj --no-build -c Release
 
       - name: Pack
-        run: dotnet pack src/Mime/Mime.csproj --no-build -c Release -o nupkg -p:Version=${GITHUB_REF_NAME#v} -p:PackageReleaseNotes=https://github.com/${{ github.repository }}/releases/tag/${GITHUB_REF_NAME}
+        run: dotnet pack src/Mime/Mime.csproj --no-build -c Release -o nupkg -p:PackageReleaseNotes=https://github.com/${{ github.repository }}/releases/tag/${GITHUB_REF_NAME}
+
+      # MinVer falls back to 0.0.0-alpha.0 without failing when it finds no tag.
+      - name: Check package version matches tag
+        run: |
+          expected="nupkg/MimeMagic.${GITHUB_REF_NAME#v}.nupkg"
+          if [ ! -f "$expected" ]; then
+            echo "::error::Expected $expected, found: $(ls nupkg)"
+            exit 1
+          fi
 
       - name: Upload NuGet package
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
