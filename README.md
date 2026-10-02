@@ -28,7 +28,7 @@ Only the NuGet package name differs from hey-red/Mime. No code changes should be
 
 ## Requirements
 
-Supported .NET versions are the current LTS releases (net8.0 and net10.0), plus the latest STS release when the library uses an API the STS adds. LTS targets are dropped once they reach end of support. An STS target is replaced by the next LTS once that ships, even though the STS is still supported.
+Supported .NET versions are the current LTS releases (net8.0 and net10.0), plus the latest STS release when the library uses an API the STS adds. LTS targets are dropped once they reach end of support. An STS target is replaced by the next LTS once that ships, even though the STS is still supported. The [.NET release watch](.github/workflows/dotnet-release-watch.yml) checks the [.NET releases index](https://github.com/dotnet/core/blob/main/release-notes/releases-index.json) weekly and opens an issue when this rule means adding or dropping a target framework.
 
 Supported runtimes:
 
