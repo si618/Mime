@@ -40,6 +40,7 @@ dotnet test test/MimeTests/MimeTests.csproj -p:Platform=ARM64   # or x86
 ## Releasing
 
 - Push an annotated `v*` tag on `master`. The version comes from the tag. `pack.yml` tests, packs and publishes via nuget.org Trusted Publishing, then creates a GitHub release with generated notes.
+- MinVer sets the version from the tag, so there's no `<Version>` in the csproj. Untagged commits build as `<next patch>-alpha.0.<height>`. `pack.yml` needs `fetch-depth: 0` to see the tags.
 - nuget.org versions are immutable. Fix a bad release with a new version.
 - Dropping a target framework or breaking the public API needs a major version.
 
