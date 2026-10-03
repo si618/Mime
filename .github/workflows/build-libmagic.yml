@@ -134,7 +134,7 @@ jobs:
     if: needs.resolve-version.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     # glibc 2.28, the baseline in check-linux-deps.sh; the image already carries git, autotools and gcc-toolset.
-    container: quay.io/pypa/manylinux_2_28_x86_64@sha256:c2261579b9c2e5d45aa93312f73e2a302182e3e977b558581a1838d6fed3d8e6
+    container: quay.io/pypa/manylinux_2_28_x86_64@sha256:1e102f2e9ed9b7fd8d64b29f798c76078c3fa8f14d34914d7a4045e39419d8e0
     steps:
       - name: Install dependencies
         run: dnf install -y zlib-devel
@@ -171,7 +171,7 @@ jobs:
     # Built natively on an arm64 runner: there's no manylinux image for cross-compiling.
     runs-on: ubuntu-24.04-arm
     # glibc 2.28, the baseline in check-linux-deps.sh; the image already carries git, autotools and gcc-toolset.
-    container: quay.io/pypa/manylinux_2_28_aarch64@sha256:acc4e63610fef1da3d687322793665205415c2b22c0d2e403f1a44eb834d63fc
+    container: quay.io/pypa/manylinux_2_28_aarch64@sha256:017c91801301dee044fdf5e48f0291071a471f493a2f047c10d39987fe219536
     steps:
       - name: Install dependencies
         run: dnf install -y zlib-devel
