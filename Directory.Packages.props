@@ -13,13 +13,13 @@
   </ItemGroup>
 
   <ItemGroup Label="Analyzers">
-    <PackageVersion Include="Meziantou.Analyzer" Version="3.0.292" />
+    <PackageVersion Include="Meziantou.Analyzer" Version="3.0.294" />
   </ItemGroup>
 
   <!-- No Microsoft.Testing.Platform entry: xunit.v3 carries its own compatible version, and
        pinning MTP separately overrides it via transitive pinning into a runtime TypeLoadException. -->
   <ItemGroup Label="Testing">
-    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.2" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.12.0" />
     <PackageVersion Include="xunit.v3" Version="4.0.1" />
   </ItemGroup>
 
