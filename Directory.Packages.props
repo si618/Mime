@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup Label="Analyzers">
-    <PackageVersion Include="Meziantou.Analyzer" Version="3.0.294" />
+    <PackageVersion Include="Meziantou.Analyzer" Version="3.0.296" />
   </ItemGroup>
 
   <!-- No Microsoft.Testing.Platform entry: xunit.v3 carries its own compatible version, and
