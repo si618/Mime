@@ -134,7 +134,7 @@ jobs:
     if: needs.resolve-version.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     # glibc 2.28, the baseline in check-linux-deps.sh; the image already carries git, autotools and gcc-toolset.
-    container: quay.io/pypa/manylinux_2_28_x86_64@sha256:1e7b8460ad8fb3fb0fbe1cd818845159ac896b4fd17452d56e892c291f3b97a8
+    container: quay.io/pypa/manylinux_2_28_x86_64@sha256:e0adf18521ad35192df733a6c62d35df7801957d24e0470238aacecfab2188a3
     steps:
       - name: Install dependencies
         run: dnf install -y zlib-devel
@@ -171,7 +171,7 @@ jobs:
     # Built natively on an arm64 runner: there's no manylinux image for cross-compiling.
     runs-on: ubuntu-24.04-arm
     # glibc 2.28, the baseline in check-linux-deps.sh; the image already carries git, autotools and gcc-toolset.
-    container: quay.io/pypa/manylinux_2_28_aarch64@sha256:b873ffc316ffe8a154e3dc4872871de2ebd170db4876c8bbd983d42ff320001e
+    container: quay.io/pypa/manylinux_2_28_aarch64@sha256:a3e02308c822fb6ce0d12248b0c941817ba5e1a1bc9e7bb5929f29c50eaa40a9
     steps:
       - name: Install dependencies
         run: dnf install -y zlib-devel
@@ -206,7 +206,7 @@ jobs:
     needs: resolve-version
     if: needs.resolve-version.outputs.should_run == 'true'
     runs-on: ubuntu-latest
-    container: alpine@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 # alpine:3.21
+    container: alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a # alpine:3.21
     steps:
       - name: Install dependencies
         run: apk add --no-cache git build-base autoconf automake libtool zlib-dev
