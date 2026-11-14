@@ -7,20 +7,20 @@
   </PropertyGroup>
 
   <ItemGroup Label="Library">
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.403" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.404" />
     <PackageVersion Include="MinVer" Version="8.0.0" />
     <PackageVersion Include="MimeTypesMap" Version="1.0.9" />
   </ItemGroup>
 
   <ItemGroup Label="Analyzers">
-    <PackageVersion Include="Meziantou.Analyzer" Version="3.0.321" />
+    <PackageVersion Include="Meziantou.Analyzer" Version="3.0.340" />
   </ItemGroup>
 
   <!-- No Microsoft.Testing.Platform entry: xunit.v3 carries its own compatible version, and
        pinning MTP separately overrides it via transitive pinning into a runtime TypeLoadException. -->
   <ItemGroup Label="Testing">
     <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.12.0" />
-    <PackageVersion Include="xunit.v3" Version="4.0.2" />
+    <PackageVersion Include="xunit.v3" Version="4.0.3" />
   </ItemGroup>
 
 </Project>
